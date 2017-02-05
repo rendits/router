@@ -28,14 +28,14 @@ import net.gcdc.asn1.datatypes.IntRange;
 public class SimpleCam{
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
     private final int SIMPLE_CAM_LENGTH = 82;
-    
+
     byte messageID = MessageId.cam;
     int stationID;
     int genDeltaTimeMillis;
     byte containerMask;
     int stationType;
     int latitude;
-    int longitude; 
+    int longitude;
     int semiMajorAxisConfidence;
     int semiMinorAxisConfidence;
     int semiMajorOrientation;
@@ -58,7 +58,7 @@ public class SimpleCam{
                      byte containerMask,
                      int stationType,
                      int latitude,
-                     int longitude, 
+                     int longitude,
                      int semiMajorAxisConfidence,
                      int semiMinorAxisConfidence,
                      int semiMajorOrientation,
@@ -74,7 +74,7 @@ public class SimpleCam{
                      int yawRate,
                      int yawRateConfidence,
                      int vehicleRole) {
-        
+
         this.stationID = stationID;
         this.genDeltaTimeMillis = genDeltaTimeMillis;
         this.containerMask = containerMask;
@@ -97,11 +97,11 @@ public class SimpleCam{
         this.yawRateConfidence = yawRateConfidence;
         this.vehicleRole = vehicleRole;
     }
-    
+
     /* For creating a simple CAM from a UDP message as received from the vehicle control system. */
     public SimpleCam(byte[] receivedData){
         if(receivedData.length < SIMPLE_CAM_LENGTH){
-            logger.error("Simple CAM is too short. Is: {} Should be: {}", 
+            logger.error("Simple CAM is too short. Is: {} Should be: {}",
                          receivedData.length, SIMPLE_CAM_LENGTH);
             throw new IllegalArgumentException();
         }
@@ -156,7 +156,7 @@ public class SimpleCam{
         }
         if(!checkInt(Longitude.class, longitude, "Longitude")){
             longitude = Longitude.unavailable;
-        }        
+        }
         if(!checkInt(SemiAxisLength.class, semiMajorAxisConfidence, "SemiMajorConfidence")){
             semiMajorAxisConfidence = SemiAxisLength.unavailable;
         }
@@ -218,7 +218,7 @@ public class SimpleCam{
     public SimpleCam(Cam camPacket){
         CoopAwareness cam = camPacket.getCam();
         ItsPduHeader header = camPacket.getHeader();
-        GenerationDeltaTime generationDeltaTime = cam.getGenerationDeltaTime();         
+        GenerationDeltaTime generationDeltaTime = cam.getGenerationDeltaTime();
         CamParameters camParameters = cam.getCamParameters();
 
         messageID = (byte) header.getMessageID().value;
@@ -314,12 +314,56 @@ public class SimpleCam{
     public int getGenerationDeltaTime(){
         return this.genDeltaTimeMillis;
     }
-    
+
+    @Override
+    public boolean equals(Object o) {
+            // self check
+            if (this == o) {
+                    return true;
+            }
+
+            // null check
+            if (o == null) {
+                    return false;
+            }
+
+            // type check and cast
+            if (getClass() != o.getClass()) {
+                    return false;
+            }
+
+            SimpleCam simpleCam = (SimpleCam) o;
+
+            // field comparison
+            return messageID == simpleCam.messageID
+                    && stationID == simpleCam.stationID
+                    && genDeltaTimeMillis == simpleCam.genDeltaTimeMillis
+                    && containerMask == simpleCam.containerMask
+                    && stationType == simpleCam.stationType
+                    && latitude == simpleCam.latitude
+                    && longitude == simpleCam.longitude
+                    && semiMajorAxisConfidence == simpleCam.semiMajorAxisConfidence
+                    && semiMinorAxisConfidence == simpleCam.semiMinorAxisConfidence
+                    && semiMajorOrientation == simpleCam.semiMajorOrientation
+                    && altitude == simpleCam.altitude
+                    && heading == simpleCam.heading
+                    && headingConfidence == simpleCam.headingConfidence
+                    && speed == simpleCam.speed
+                    && speedConfidence == simpleCam.speedConfidence
+                    && vehicleLength == simpleCam.vehicleLength
+                    && vehicleWidth == simpleCam.vehicleWidth
+                    && longitudinalAcceleration == simpleCam.longitudinalAcceleration
+                    && longitudinalAccelerationConfidence == simpleCam.longitudinalAccelerationConfidence
+                    && yawRate == simpleCam.yawRate
+                    && yawRateConfidence == simpleCam.yawRateConfidence
+                    && vehicleRole == simpleCam.vehicleRole;
+    }
+
 
     /* Check if the simple CAM is valid. */
     boolean isValid(){
         boolean valid = true;
-        
+
         if(messageID != MessageId.cam){
             logger.error("MessageID is: {} Should be: {}",
                          messageID, MessageId.cam);
@@ -330,11 +374,11 @@ public class SimpleCam{
         if(!checkInt(GenerationDeltaTime.class, genDeltaTimeMillis, "GenerationDeltaTime")) valid = false;
         if(!checkInt(StationType.class, stationType, "StationType")) valid = false;
         if(!checkInt(Latitude.class, latitude, "Latitude")) valid = false;
-        if(!checkInt(Longitude.class, longitude, "Longitude")) valid = false;        
+        if(!checkInt(Longitude.class, longitude, "Longitude")) valid = false;
         if(!checkInt(SemiAxisLength.class, semiMajorAxisConfidence, "SemiMajorConfidence")) valid = false;
         if(!checkInt(SemiAxisLength.class, semiMinorAxisConfidence, "SemiMinorConfidence")) valid = false;
         if(!checkInt(HeadingValue.class, semiMajorOrientation, "SemiMajorOrientation")) valid = false;
-        if(!checkInt(AltitudeValue.class, altitude, "Altitude")) valid = false;        
+        if(!checkInt(AltitudeValue.class, altitude, "Altitude")) valid = false;
         if(!checkInt(HeadingValue.class, heading, "Heading")) valid = false;
         if(!checkInt(HeadingConfidence.class, headingConfidence, "HeadingConfidence")) valid = false;
         if(!checkInt(SpeedValue.class, speed, "Speed")) valid = false;
@@ -380,7 +424,7 @@ public class SimpleCam{
             buffer.put(containerMask);
             buffer.putInt(stationType);
             buffer.putInt(latitude);
-            buffer.putInt(longitude);                         
+            buffer.putInt(longitude);
             buffer.putInt(semiMajorAxisConfidence);
             buffer.putInt(semiMinorAxisConfidence);
             buffer.putInt(semiMajorOrientation);
@@ -418,7 +462,7 @@ public class SimpleCam{
                                                                             new PathHistory()
                                                                             ))
             :
-            null; 
+            null;
 
         //Not used for participating vehicles
         SpecialVehicleContainer specialVehicleContainer = null;
@@ -446,7 +490,7 @@ public class SimpleCam{
                                                                                               new AccelerationConfidence(longitudinalAccelerationConfidence)))
                                        //Curvature and CurvatureCalculationMode isn't part of the GCDC spec. Set to unavailable.
                                        .curvature(new Curvature())
-                                       .curvatureCalculationMode(CurvatureCalculationMode.values()[2])                                       
+                                       .curvatureCalculationMode(CurvatureCalculationMode.values()[2])
                                        .yawRate(new YawRate(new YawRateValue(yawRate),
                                                             //TODO: This code is slow. Cache YawRateConfidence.values() if it's a problem.
                                                             YawRateConfidence.values()[yawRateConfidence]))

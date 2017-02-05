@@ -46,15 +46,15 @@ public class SimpleIclcm{
     int startPlatoon;
     int endOfScenario;
     //MIO Container
-    int mioID; 
-    int mioRange; 
-    int mioBearing; 
-    int mioRangeRate; 
+    int mioID;
+    int mioRange;
+    int mioBearing;
+    int mioRangeRate;
     //Lane Container
     int lane;
     //Pair ID Container
-    int forwardID; 
-    int backwardID; 
+    int forwardID;
+    int backwardID;
     //Merge Container
     int mergeRequest;
     int mergeSafeToMerge;
@@ -84,15 +84,15 @@ public class SimpleIclcm{
                 int startPlatoon,
                 int endOfScenario,
                 //MIO Container
-                int mioID, 
-                int mioRange, 
-                int mioBearing, 
-                int mioRangeRate, 
+                int mioID,
+                int mioRange,
+                int mioBearing,
+                int mioRangeRate,
                 //Lane Container
                 int lane,
                 //Pair ID Container
-                int forwardID, 
-                int backwardID, 
+                int forwardID,
+                int backwardID,
                 //Merge Container
                 int mergeRequest,
                 int mergeSafeToMerge,
@@ -122,15 +122,15 @@ public class SimpleIclcm{
         this.startPlatoon = startPlatoon;
         this.endOfScenario = endOfScenario;
         //MIO Container
-        this.mioID = mioID; 
-        this.mioRange = mioRange; 
-        this.mioBearing = mioBearing; 
-        this.mioRangeRate = mioRangeRate; 
+        this.mioID = mioID;
+        this.mioRange = mioRange;
+        this.mioBearing = mioBearing;
+        this.mioRangeRate = mioRangeRate;
         //Lane Container
         this.lane = lane;
         //Pair ID Container
-        this.forwardID = forwardID; 
-        this.backwardID = backwardID; 
+        this.forwardID = forwardID;
+        this.backwardID = backwardID;
         //Merge Container
         this.mergeRequest = mergeRequest;
         this.mergeSafeToMerge = mergeSafeToMerge;
@@ -147,14 +147,14 @@ public class SimpleIclcm{
     /* For creating a simple iCLCM from a UDP message as received from the vehicle control system. */
     public SimpleIclcm(byte[] receivedData){
         if(receivedData.length < SIMPLE_iCLCM_LENGTH){
-            logger.error("Simple iCLCM is too short. Is: {} Should be: {}", 
+            logger.error("Simple iCLCM is too short. Is: {} Should be: {}",
                          receivedData.length, SIMPLE_iCLCM_LENGTH);
-            throw new IllegalArgumentException();            
+            throw new IllegalArgumentException();
         }
         ByteBuffer buffer = ByteBuffer.wrap(receivedData);
         messageID = buffer.get();
 
-        
+
         stationID = buffer.getInt();
         containerMask = buffer.get();
         //HW Container
@@ -195,11 +195,11 @@ public class SimpleIclcm{
         /* Verify that the values are correct and attempt to replace
          * any errors with default values. */
         if(messageID != net.gcdc.camdenm.Iclcm.MessageID_iCLCM){
-            logger.error("MessageID is: {} Should be: {}",         
+            logger.error("MessageID is: {} Should be: {}",
                          messageID, net.gcdc.camdenm.Iclcm.MessageID_iCLCM);
-            throw new IllegalArgumentException();            
-        }        
-        
+            throw new IllegalArgumentException();
+        }
+
         if(!checkInt(StationID.class, stationID, "StationID")){ throw new IllegalArgumentException(); }
         if(!checkInt(VehicleRearAxleLocation.class, rearAxleLocation, "RearAxleLocation")){ throw new IllegalArgumentException(); }
         if(!checkInt(ControllerType.class, controllerType, "ControllerType")){ throw new IllegalArgumentException(); }
@@ -219,7 +219,7 @@ public class SimpleIclcm{
             if(this.hasEndOfScenario())
                 if(!checkInt(EndOfScenario.class, endOfScenario, "EndOfScenario")){ throw new IllegalArgumentException(); }
         }
-        
+
         if(!checkInt(StationID.class, mioID, "MioID")){ throw new IllegalArgumentException(); }
         if(!checkInt(MioRange.class, mioRange, "MioRange")){ mioRange = MioRange.unavailable; }
         if(!checkInt(MioBearing.class, mioBearing, "MioBearing")){ mioBearing = MioBearing.unavailable; }
@@ -237,7 +237,7 @@ public class SimpleIclcm{
         if(!checkInt(Intention.class, intention, "Intention")){ throw new IllegalArgumentException(); }
         if(!checkInt(Counter.class, counter, "Counter")){ counter = 0; }
     }
-    
+
 
     /* For creating a simple iCLCM from a iCLCM message as received from another ITS station. */
     public SimpleIclcm(IgameCooperativeLaneChangeMessage iCLCM){
@@ -246,56 +246,56 @@ public class SimpleIclcm{
         messageID = (byte) header.getMessageID().value;
         stationID = (int) header.getStationID().value;
         IclmParameters iclmParameters = iclcm.getIclmParameters();
-        containerMask = 0;        
+        containerMask = 0;
 
         if(messageID != net.gcdc.camdenm.Iclcm.MessageID_iCLCM){
             logger.warn("Malformed message on BTP port 2010 from station with ID {}", stationID);
             throw new IllegalArgumentException("Malformed message on BTP port 2010");
         }
-        
+
         /* VehicleContainerHighFrequency */
         VehicleContainerHighFrequency vehicleContainerHighFrequency = iclmParameters.getVehicleContainerHighFrequency();
-        rearAxleLocation = (int) vehicleContainerHighFrequency.getVehicleRearAxleLocation().value;        
-        controllerType = (int) vehicleContainerHighFrequency.getControllerType().value;        
+        rearAxleLocation = (int) vehicleContainerHighFrequency.getVehicleRearAxleLocation().value;
+        controllerType = (int) vehicleContainerHighFrequency.getControllerType().value;
         responseTimeConstant = (int) vehicleContainerHighFrequency.getVehicleResponseTime().getVehicleResponseTimeConstant().value;
         responseTimeDelay = (int) vehicleContainerHighFrequency.getVehicleResponseTime().getVehicleResponseTimeDelay().value;
-        targetLongAcc = (int) vehicleContainerHighFrequency.getTargetLongitudinalAcceleration().value;        
+        targetLongAcc = (int) vehicleContainerHighFrequency.getTargetLongitudinalAcceleration().value;
         timeHeadway = (int) vehicleContainerHighFrequency.getTimeHeadway().value;
-        cruiseSpeed = (int) vehicleContainerHighFrequency.getCruisespeed().value;        
+        cruiseSpeed = (int) vehicleContainerHighFrequency.getCruisespeed().value;
 
         /* VehicleContainerLowFrequency */
         VehicleContainerLowFrequency lowFrequencyContainer = null;
-        lowFrequencyMask = 0;            
+        lowFrequencyMask = 0;
         if(iclmParameters.hasLowFrequencyContainer()){
             containerMask += (1<<7);
             lowFrequencyContainer = iclmParameters.getLowFrequencyContainer();
 
             if(lowFrequencyContainer.hasParticipantsReady()){
-                lowFrequencyMask += (1<<7);                
-                participantsReady = (int) lowFrequencyContainer.getParticipantsReady().value;                
-            }           
+                lowFrequencyMask += (1<<7);
+                participantsReady = (int) lowFrequencyContainer.getParticipantsReady().value;
+            }
 
             if(lowFrequencyContainer.hasStartPlatoon()){
-                lowFrequencyMask += (1<<6);                                
-		startPlatoon = (int) lowFrequencyContainer.getStartPlatoon().value;                
+                lowFrequencyMask += (1<<6);
+		startPlatoon = (int) lowFrequencyContainer.getStartPlatoon().value;
             }
 
             if(lowFrequencyContainer.hasEndOfScenario()){
-                lowFrequencyMask += (1<<5);                                
-		endOfScenario = (int) lowFrequencyContainer.getEndOfScenario().value;                
+                lowFrequencyMask += (1<<5);
+		endOfScenario = (int) lowFrequencyContainer.getEndOfScenario().value;
             }
         }
-        
+
         /* MostImportantObjectContainer */
         MostImportantObjectContainer mostImportantObjectContainer = iclmParameters.getMostImportantObjectContainer();
-        mioID = (int) mostImportantObjectContainer.getMioID().value;        
-        mioRange = (int) mostImportantObjectContainer.getMioRange().value;        
-        mioBearing = (int) mostImportantObjectContainer.getMioBearing().value();        
-        mioRangeRate = (int) mostImportantObjectContainer.getMioRangeRate().value();        
+        mioID = (int) mostImportantObjectContainer.getMioID().value;
+        mioRange = (int) mostImportantObjectContainer.getMioRange().value;
+        mioBearing = (int) mostImportantObjectContainer.getMioBearing().value();
+        mioRangeRate = (int) mostImportantObjectContainer.getMioRangeRate().value();
 
         /* LaneObject */
         LaneObject laneObject = iclmParameters.getLaneObject();
-        lane = (int) laneObject.getLane().value();        
+        lane = (int) laneObject.getLane().value();
 
         /* PairIdObject */
         PairIdObject pairIdObject = iclmParameters.getPairIdObject();
@@ -304,18 +304,18 @@ public class SimpleIclcm{
 
         /* MergeObject */
         MergeObject mergeObject = iclmParameters.getMergeObject();
-        mergeRequest = (int) mergeObject.getMergeRequest().value;        
-        mergeSafeToMerge = (int) mergeObject.getMergeSafeToMerge().value;        
-        mergeFlag = (int) mergeObject.getMergeFlag().value;        
-        mergeFlagTail = (int) mergeObject.getMergeFlagTail().value;        
-        mergeFlagHead = (int) mergeObject.getMergeFlagHead().value;        
+        mergeRequest = (int) mergeObject.getMergeRequest().value;
+        mergeSafeToMerge = (int) mergeObject.getMergeSafeToMerge().value;
+        mergeFlag = (int) mergeObject.getMergeFlag().value;
+        mergeFlagTail = (int) mergeObject.getMergeFlagTail().value;
+        mergeFlagHead = (int) mergeObject.getMergeFlagHead().value;
 
         /* ScenarioObject */
         ScenarioObject scenarioObject = iclmParameters.getScenarioObject();
-        platoonID = (int) scenarioObject.getPlatoonID().value;        
-        distanceTravelledCz = (int) scenarioObject.getDistanceTravelledCZ().value;        
-        intention = (int) scenarioObject.getIntention().value;        
-        counter = (int) scenarioObject.getCounterIntersection().value;      
+        platoonID = (int) scenarioObject.getPlatoonID().value;
+        distanceTravelledCz = (int) scenarioObject.getDistanceTravelledCZ().value;
+        intention = (int) scenarioObject.getIntention().value;
+        counter = (int) scenarioObject.getCounterIntersection().value;
     }
 
 
@@ -334,8 +334,8 @@ public class SimpleIclcm{
 
     boolean hasEndOfScenario(){
         return (lowFrequencyMask & (1<<5)) != 0;
-    }    
-    
+    }
+
     /* Return the IntRange min and max value as a nice string. */
     String getIntRangeString(IntRange intRange){
         String string = "minValue=" + intRange.minValue() + ", maxValue=" + intRange.maxValue();
@@ -359,6 +359,57 @@ public class SimpleIclcm{
                         name, value, getIntRangeString(intRange));
             return false;
         }else return true;
+    }
+
+    public boolean equals(Object o) {
+            // self check
+            if (this == o) {
+                    return true;
+            }
+
+            // null check
+            if (o == null) {
+                    return false;
+            }
+
+            // type check and cast
+            if (getClass() != o.getClass()) {
+                    return false;
+            }
+
+            SimpleIclcm simpleIclcm = (SimpleIclcm) o;
+
+            // field comparison
+            return messageID == simpleIclcm.messageID
+                    && stationID == simpleIclcm.stationID
+                    && containerMask == simpleIclcm.containerMask
+                    && rearAxleLocation == simpleIclcm.rearAxleLocation
+                    && controllerType == simpleIclcm.controllerType
+                    && responseTimeConstant == simpleIclcm.responseTimeConstant
+                    && responseTimeDelay == simpleIclcm.responseTimeDelay
+                    && targetLongAcc == simpleIclcm.targetLongAcc
+                    && timeHeadway == simpleIclcm.timeHeadway
+                    && cruiseSpeed == simpleIclcm.cruiseSpeed
+                    && lowFrequencyMask == simpleIclcm.lowFrequencyMask
+                    && participantsReady == simpleIclcm.participantsReady
+                    && startPlatoon == simpleIclcm.startPlatoon
+                    && endOfScenario == simpleIclcm.endOfScenario
+                    && mioID == simpleIclcm.mioID
+                    && mioRange == simpleIclcm.mioRange
+                    && mioBearing == simpleIclcm.mioBearing
+                    && mioRangeRate == simpleIclcm.mioRangeRate
+                    && lane == simpleIclcm.lane
+                    && forwardID == simpleIclcm.forwardID
+                    && backwardID == simpleIclcm.backwardID
+                    && mergeRequest == simpleIclcm.mergeRequest
+                    && mergeSafeToMerge == simpleIclcm.mergeSafeToMerge
+                    && mergeFlag == simpleIclcm.mergeFlag
+                    && mergeFlagTail == simpleIclcm.mergeFlagTail
+                    && mergeFlagHead == simpleIclcm.mergeFlagHead
+                    && platoonID == simpleIclcm.platoonID
+                    && distanceTravelledCz == simpleIclcm.distanceTravelledCz
+                    && intention == simpleIclcm.intention
+                    && counter == simpleIclcm.counter;
     }
 
 
@@ -392,7 +443,7 @@ public class SimpleIclcm{
         if(!checkInt(PlatoonID.class, platoonID, "PlatoonID")) valid = false;
         if(!checkInt(DistanceTravelledCZ.class, distanceTravelledCz, "DistanceTravelledCz")) valid = false;
         if(!checkInt(Intention.class, intention, "Intention")) valid = false;
-        if(!checkInt(Counter.class, counter, "Counter")) valid = false;        
+        if(!checkInt(Counter.class, counter, "Counter")) valid = false;
         return valid;
     }
 
@@ -464,7 +515,7 @@ public class SimpleIclcm{
             new MostImportantObjectContainer(new StationID(mioID),
                                              new MioRange(mioRange),
                                              new MioBearing(mioBearing),
-                                             new MioRangeRate(mioRangeRate));       
+                                             new MioRangeRate(mioRangeRate));
 
         LaneObject laneObject =
             new LaneObject(new Lane(lane));
@@ -481,7 +532,7 @@ public class SimpleIclcm{
                             new MergeFlagTail(mergeFlagTail),
                             new MergeFlagHead(mergeFlagHead));
 
-        ScenarioObject scenarioObject =            
+        ScenarioObject scenarioObject =
             new ScenarioObject(new PlatoonID(platoonID),
                                new DistanceTravelledCZ(distanceTravelledCz),
                                new Intention(intention),
@@ -500,11 +551,11 @@ public class SimpleIclcm{
         IgameCooperativeLaneChangeMessageBody igameCooperativeLaneChangeMessageBody =
             new IgameCooperativeLaneChangeMessageBody(new GenerationDeltaTime(),
                                                       iclmParameters);
-                                                                                 
+
 
         return new IgameCooperativeLaneChangeMessage(new ItsPduHeader(new ProtocolVersion(1),
                                                                       new MessageId(net.gcdc.camdenm.Iclcm.MessageID_iCLCM),
                                                                       new StationID(stationID)),
                                                      igameCooperativeLaneChangeMessageBody);
-    }    
+    }
 }

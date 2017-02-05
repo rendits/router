@@ -59,7 +59,7 @@ public class SimpleDenm{
     int temperature;
     int positioningSolutionType;
 
-    /* Create a simple DENM by supplying the values manually. */ 
+    /* Create a simple DENM by supplying the values manually. */
     public SimpleDenm(int stationID,
                       int generationDeltaTime,
                       byte containerMask,
@@ -117,13 +117,13 @@ public class SimpleDenm{
     this.lanePosition = lanePosition;
     this.temperature = temperature;
     this.positioningSolutionType = positioningSolutionType;
-        
+
     }
 
     /* For creating a simple DENM from a UDP message as received from the vehicle control system. */
     public SimpleDenm(byte[] receivedData){
         if(receivedData.length < SIMPLE_DENM_LENGTH){
-            logger.error("Simple DENM is too short. Is: {} Should be: {}", 
+            logger.error("Simple DENM is too short. Is: {} Should be: {}",
                          receivedData.length, SIMPLE_DENM_LENGTH);
             throw new IllegalArgumentException();
         }
@@ -160,7 +160,7 @@ public class SimpleDenm{
         positioningSolutionType = buffer.getInt();
 
         /* Verify that the values are correct and attempt to replace
-         * any errors with default values. */        
+         * any errors with default values. */
         if(messageID != MessageId.denm){
             logger.error("Simple DENM has incorrect id. Id: {} Should be: {}",
                          messageID, MessageId.denm);
@@ -175,11 +175,11 @@ public class SimpleDenm{
          * spec. states. As a workaround to Matlab not supporting long
          * these values are sent as number of increments of 65536ms.
          * We get the true timestamps by multiplying with 65536 and
-         * adding the generationDeltaTime. 
+         * adding the generationDeltaTime.
          */
         if(!checkInt(TimestampIts.class, detectionTime * 65536 + generationDeltaTime, "DetectionTime")) { throw new IllegalArgumentException(); }
         if(!checkInt(TimestampIts.class, referenceTime * 65536 + generationDeltaTime, "ReferenceTime")) { throw new IllegalArgumentException(); }
-        
+
         if(!Termination.isMember(termination)){
             logger.warn("Termination is not valid. Value={}", termination);
             { termination = (int) Termination.defaultValue().value(); }
@@ -194,11 +194,11 @@ public class SimpleDenm{
             logger.warn("RelevanceDistance is not valid. Value={}", relevanceDistance);
             { relevanceDistance = (int) RelevanceDistance.defaultValue().value(); }
         }
-        
+
         if(!RelevanceTrafficDirection.isMember(relevanceTrafficDirection)){
             logger.error("RelevanceTrafficDirection is not valid. Value={}", relevanceTrafficDirection);
             { relevanceTrafficDirection = RelevanceTrafficDirection.defaultValue().value(); }
-        }        
+        }
         if(!checkInt(ValidityDuration.class, validityDuration, "ValidityDuration")) { validityDuration = (int) net.gcdc.camdenm.CoopIts.defaultValidity.value; }
         if(!checkInt(TransmissionInterval.class, transmissionInterval, "TransmissionInterval")) { transmissionInterval = TransmissionInterval.oneMilliSecond * 100; }
         if(!checkInt(StationType.class, stationType, "StationType")) { stationType = StationType.unknown; }
@@ -217,15 +217,15 @@ public class SimpleDenm{
             { throw new IllegalArgumentException(); }
         }
     }
-    
+
     /* For creating a simple DENM from a DENM message as received from another ITS station. */
-    public SimpleDenm(Denm denmPacket){      
+    public SimpleDenm(Denm denmPacket){
         DecentralizedEnvironmentalNotificationMessage denm = denmPacket.getDenm();
         ItsPduHeader header = denmPacket.getHeader();
-        ManagementContainer managementContainer = denm.getManagement();        
+        ManagementContainer managementContainer = denm.getManagement();
         messageID = (byte) header.getMessageID().value;
         stationID = (int) header.getStationID().value;
-        generationDeltaTime = (int) managementContainer.getReferenceTime().value % 65536;     
+        generationDeltaTime = (int) managementContainer.getReferenceTime().value % 65536;
         containerMask = 0;
 
         if(messageID != MessageId.denm){
@@ -235,8 +235,8 @@ public class SimpleDenm{
 
         /* ManagementContainer */
         managementMask = 0;
-        
-        //buffer.putInt((int) managementContainer.getActionID().getOriginatingStationID().value);       
+
+        //buffer.putInt((int) managementContainer.getActionID().getOriginatingStationID().value);
         detectionTime = (int) managementContainer.getDetectionTime().value / 65536;
         referenceTime = (int) managementContainer.getReferenceTime().value / 65536;
 
@@ -244,7 +244,7 @@ public class SimpleDenm{
             managementMask += (1<<7);
             termination = (int) managementContainer.getTermination().value();
         }
-        
+
         latitude = (int) managementContainer.getEventPosition().getLatitude().value;
         longitude = (int) managementContainer.getEventPosition().getLongitude().value;
         semiMajorConfidence = (int) managementContainer.getEventPosition().getPositionConfidenceEllipse().getSemiMajorConfidence().value;
@@ -253,25 +253,25 @@ public class SimpleDenm{
         altitude = (int) managementContainer.getEventPosition().getAltitude().getAltitudeValue().value;
 
         if(managementContainer.hasRelevanceDistance()){
-            managementMask += (1<<6);            
+            managementMask += (1<<6);
             relevanceDistance = (int) managementContainer.getRelevanceDistance().value();
         }
 
         if(managementContainer.hasRelevanceTrafficDirection()){
-            managementMask += (1<<5);            
+            managementMask += (1<<5);
             relevanceTrafficDirection = (int) managementContainer.getRelevanceTrafficDirection().value();
         }
 
         if(managementContainer.hasValidityDuration()){
-            managementMask += (1<<4);            
+            managementMask += (1<<4);
             validityDuration = (int) managementContainer.getValidityDuration().value;
         }
-        
+
         if(managementContainer.hasTransmissionInterval()){
-            managementMask += (1<<3);            
+            managementMask += (1<<3);
             transmissionInterval = (int) managementContainer.getTransmissionInterval().value;
-        }   
-        
+        }
+
         stationType = (int) managementContainer.getStationType().value;
 
         /* SituationContainer */
@@ -297,26 +297,26 @@ public class SimpleDenm{
         /*
           LocationContainer locationContainer = null;
           if(denm.hasLocation()){
-          containerMask += (1<<6);            
+          containerMask += (1<<6);
           locationContainer = denm.getLocation();
           byte locationMask = 0;
           buffer.put(locationMask);
-            
-          if(locationContainer.hasEventSpeed()){                
-          locationMask += (1<<7);                
+
+          if(locationContainer.hasEventSpeed()){
+          locationMask += (1<<7);
           buffer.putInt((int) locationContainer.getEventSpeed().getSpeedValue().value;
           buffer.putInt((int) locationContainer.getEventSpeed().getSpeedConfidence().value;
           }else buffer.put(new byte[2*4]);
-            
-          if(locationContainer.hasEventSpeed()){                
-          locationMask += (1<<6);                
+
+          if(locationContainer.hasEventSpeed()){
+          locationMask += (1<<6);
           buffer.putInt((int) locationContainer.getEventPositionHeading().getHeadingValue().value;
-          buffer.putInt((int) locationContainer.getEventPositionHeading().getHeadingConfidence().value;                
+          buffer.putInt((int) locationContainer.getEventPositionHeading().getHeadingConfidence().value;
           }else buffer.put(new byte[2*4]);
 
-          if(locationContainer.hasEventSpeed()){                
-          locationMask += (1<<5);                
-          buffer.putInt((int) locationContainer.getRoadType().value();                          
+          if(locationContainer.hasEventSpeed()){
+          locationMask += (1<<5);
+          buffer.putInt((int) locationContainer.getRoadType().value();
           }else buffer.putInt(0);
 
           //Need to update the mask since it has been changed
@@ -329,17 +329,17 @@ public class SimpleDenm{
 
         alacarteMask = 0;
         if(denm.hasAlacarte()){
-            containerMask += (1<<5);            
+            containerMask += (1<<5);
             alacarteContainer = denm.getAlacarte();
 
             if(alacarteContainer.hasLanePosition()){
                 alacarteMask += (1<<7);
-                lanePosition = (int) alacarteContainer.getLanePosition().value;                
+                lanePosition = (int) alacarteContainer.getLanePosition().value;
             }
 
             if(alacarteContainer.hasExternalTemperature()){
                 alacarteMask += (1<<5);
-                temperature = (int) alacarteContainer.getExternalTemperature().value;                
+                temperature = (int) alacarteContainer.getExternalTemperature().value;
             }
 
             if(alacarteContainer.hasPositioningSolution()){
@@ -374,6 +374,56 @@ public class SimpleDenm{
         }else return true;
     }
 
+    @Override
+    public boolean equals(Object o) {
+            // self check
+            if (this == o) {
+                    return true;
+            }
+
+            // null check
+            if (o == null) {
+                    return false;
+            }
+
+            // type check and cast
+            if (getClass() != o.getClass()) {
+                    return false;
+            }
+
+            SimpleDenm simpleDenm = (SimpleDenm) o;
+
+            // field comparison
+            return messageID == simpleDenm.messageID
+                    && stationID == simpleDenm.stationID
+                    && generationDeltaTime == simpleDenm.generationDeltaTime
+                    && containerMask == simpleDenm.containerMask
+                    && managementMask == simpleDenm.managementMask
+                    && detectionTime == simpleDenm.detectionTime
+                    && referenceTime == simpleDenm.referenceTime
+                    && termination == simpleDenm.termination
+                    && latitude == simpleDenm.latitude
+                    && longitude == simpleDenm.longitude
+                    && semiMajorConfidence == simpleDenm.semiMajorConfidence
+                    && semiMinorConfidence == simpleDenm.semiMinorConfidence
+                    && semiMajorOrientation == simpleDenm.semiMajorOrientation
+                    && altitude == simpleDenm.altitude
+                    && relevanceDistance == simpleDenm.relevanceDistance
+                    && relevanceTrafficDirection == simpleDenm.relevanceTrafficDirection
+                    && validityDuration == simpleDenm.validityDuration
+                    && transmissionInterval == simpleDenm.transmissionInterval
+                    && stationType == simpleDenm.stationType
+                    && situationMask == simpleDenm.situationMask
+                    && informationQuality == simpleDenm.informationQuality
+                    && causeCode == simpleDenm.causeCode
+                    && subCauseCode == simpleDenm.subCauseCode
+                    && linkedCauseCode == simpleDenm.linkedCauseCode
+                    && linkedSubCauseCode == simpleDenm.linkedSubCauseCode
+                    && alacarteMask == simpleDenm.alacarteMask
+                    && lanePosition == simpleDenm.lanePosition
+                    && temperature == simpleDenm.temperature
+                    && positioningSolutionType == simpleDenm.positioningSolutionType;
+    }
 
     /* Check if the simple DENM is valid. */
     boolean isValid(){
@@ -388,11 +438,11 @@ public class SimpleDenm{
          * spec. states. As a workaround to Matlab not supporting long
          * these values are sent as number of increments of 65536ms.
          * We get the true timestamps by multiplying with 65536 and
-         * adding the generationDeltaTime. 
+         * adding the generationDeltaTime.
          */
         if(!checkInt(TimestampIts.class, detectionTime * 65536 + generationDeltaTime, "DetectionTime")) valid = false;
         if(!checkInt(TimestampIts.class, referenceTime * 65536 + generationDeltaTime, "ReferenceTime")) valid = false;
-        
+
         if(!Termination.isMember(termination)){
             logger.error("Termination is not valid. Value={}", termination);
             valid = false;
@@ -407,11 +457,11 @@ public class SimpleDenm{
             logger.error("RelevanceDistance is not valid. Value={}", relevanceDistance);
             valid = false;
         }
-        
+
         if(!RelevanceTrafficDirection.isMember(relevanceTrafficDirection)){
             logger.error("RelevanceTrafficDirection is not valid. Value={}", relevanceTrafficDirection);
             valid = false;
-        }        
+        }
         if(!checkInt(ValidityDuration.class, validityDuration, "ValidityDuration")) valid = false;
         if(!checkInt(TransmissionInterval.class, transmissionInterval, "TransmissionInterval")) valid = false;
         if(!checkInt(StationType.class, stationType, "StationType")) valid = false;
@@ -430,7 +480,7 @@ public class SimpleDenm{
             valid = false;
         }
         return valid;
-    }    
+    }
 
     /* Return values as a byte array for sending as a simple DENM UDP message. */
     byte[] asByteArray(){
@@ -468,13 +518,13 @@ public class SimpleDenm{
         return packetBuffer;
 }
 
-    /* Return values as a proper DENM message for sending to another ITS station. */    
+    /* Return values as a proper DENM message for sending to another ITS station. */
     Denm asDenm(){
         /* Management container */
         ManagementContainer managementContainer =
             ManagementContainer.builder()
             .actionID(new ActionID(new StationID(stationID), new SequenceNumber(denmSequenceNumber++%65535)))
-            
+
             /* Referencetime is sent in increments of 65536ms. So to
              * get the current time we need to multiply with that and
              * add the generationDeltaTime. This is a workaround for
@@ -509,7 +559,7 @@ public class SimpleDenm{
                                    null)
             :null;
 
-        /* Location container */  
+        /* Location container */
         LocationContainer locationContainer = (containerMask & (1<<6)) != 0 ?
             new LocationContainer()
             :null;
@@ -517,16 +567,16 @@ public class SimpleDenm{
         /* Alacarte container */
         AlacarteContainer alacarteContainer = (containerMask & (1<<5)) != 0 ?
             new AlacarteContainer((alacarteMask & (1<<7)) != 0 ? new LanePosition(lanePosition) : null,
-                                  //TODO: Currently no plans of implementing.                                  
+                                  //TODO: Currently no plans of implementing.
                                   (alacarteMask & (1<<6)) != 0 ? new ImpactReductionContainer() : null,
                                   (alacarteMask & (1<<5)) != 0 ? new Temperature(temperature) : null,
-                                  //TODO: Currently no plans of implementing.                                  
+                                  //TODO: Currently no plans of implementing.
                                   (alacarteMask & (1<<4)) != 0 ? new RoadWorksContainerExtended() : null,
                                   (alacarteMask & (1<<3)) != 0 ? PositioningSolutionType.values()[positioningSolutionType] : null,
                                   //TODO: Currently no plans of implementing.
-                                  (alacarteMask & (1<<2)) != 0 ? new StationaryVehicleContainer() : null)                                  
+                                  (alacarteMask & (1<<2)) != 0 ? new StationaryVehicleContainer() : null)
             :null;
-                                                                               
+
         DecentralizedEnvironmentalNotificationMessage decentralizedEnvironmentalNotificationMessage =
             new DecentralizedEnvironmentalNotificationMessage(managementContainer,
                                                               situationContainer,
