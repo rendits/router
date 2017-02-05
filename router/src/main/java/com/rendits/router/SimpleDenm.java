@@ -23,9 +23,9 @@ import net.gcdc.camdenm.CoopIts.ItsPduHeader.MessageId;
 import net.gcdc.camdenm.CoopIts.ItsPduHeader.ProtocolVersion;
 import net.gcdc.asn1.datatypes.IntRange;
 
-public class LocalDenm{
+public class SimpleDenm{
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
-    private final int LOCAL_DENM_LENGTH = 101;
+    private final int SIMPLE_DENM_LENGTH = 101;
     /* TODO: Is this the right way to keep sequence numbers? */
     private static int denmSequenceNumber = 0;
 
@@ -59,11 +59,72 @@ public class LocalDenm{
     int temperature;
     int positioningSolutionType;
 
-    /* For creating a local DENM from a UDP message as received from the vehicle control system. */
-    LocalDenm(byte[] receivedData){
-        if(receivedData.length < LOCAL_DENM_LENGTH){
-            logger.error("Local DENM is too short. Is: {} Should be: {}", 
-                         receivedData.length, LOCAL_DENM_LENGTH);
+    /* Create a simple DENM by supplying the values manually. */ 
+    public SimpleDenm(int stationID,
+                      int generationDeltaTime,
+                      byte containerMask,
+                      byte managementMask,
+                      int detectionTime,
+                      int referenceTime,
+                      int termination,
+                      int latitude,
+                      int longitude,
+                      int semiMajorConfidence,
+                      int semiMinorConfidence,
+                      int semiMajorOrientation,
+                      int altitude,
+                      int relevanceDistance,
+                      int relevanceTrafficDirection,
+                      int validityDuration,
+                      int transmissionInterval,
+                      int stationType,
+                      byte situationMask,
+                      int informationQuality,
+                      int causeCode,
+                      int subCauseCode,
+                      int linkedCauseCode,
+                      int linkedSubCauseCode,
+                      byte alacarteMask,
+                      int lanePosition,
+                      int temperature,
+                      int positioningSolutionType) {
+
+    this.stationID = stationID;
+    this.generationDeltaTime = generationDeltaTime;
+    this.containerMask = containerMask;
+    this.managementMask = managementMask;
+    this.detectionTime = detectionTime;
+    this.referenceTime = referenceTime;
+    this.termination = termination;
+    this.latitude = latitude;
+    this.longitude = longitude;
+    this.semiMajorConfidence = semiMajorConfidence;
+    this.semiMinorConfidence = semiMinorConfidence;
+    this.semiMajorOrientation = semiMajorOrientation;
+    this.altitude = altitude;
+    this.relevanceDistance = relevanceDistance;
+    this.relevanceTrafficDirection = relevanceTrafficDirection;
+    this.validityDuration = validityDuration;
+    this.transmissionInterval = transmissionInterval;
+    this.stationType = stationType;
+    this.situationMask = situationMask;
+    this.informationQuality = informationQuality;
+    this.causeCode = causeCode;
+    this.subCauseCode = subCauseCode;
+    this.linkedCauseCode = linkedCauseCode;
+    this.linkedSubCauseCode = linkedSubCauseCode;
+    this.alacarteMask = alacarteMask;
+    this.lanePosition = lanePosition;
+    this.temperature = temperature;
+    this.positioningSolutionType = positioningSolutionType;
+        
+    }
+
+    /* For creating a simple DENM from a UDP message as received from the vehicle control system. */
+    public SimpleDenm(byte[] receivedData){
+        if(receivedData.length < SIMPLE_DENM_LENGTH){
+            logger.error("Simple DENM is too short. Is: {} Should be: {}", 
+                         receivedData.length, SIMPLE_DENM_LENGTH);
             throw new IllegalArgumentException();
         }
 
@@ -101,7 +162,7 @@ public class LocalDenm{
         /* Verify that the values are correct and attempt to replace
          * any errors with default values. */        
         if(messageID != MessageId.denm){
-            logger.error("Local DENM has incorrect id. Id: {} Should be: {}",
+            logger.error("Simple DENM has incorrect id. Id: {} Should be: {}",
                          messageID, MessageId.denm);
             throw new IllegalArgumentException();
         }
@@ -157,8 +218,8 @@ public class LocalDenm{
         }
     }
     
-    /* For creating a local DENM from a DENM message as received from another ITS station. */
-    LocalDenm(Denm denmPacket){      
+    /* For creating a simple DENM from a DENM message as received from another ITS station. */
+    public SimpleDenm(Denm denmPacket){      
         DecentralizedEnvironmentalNotificationMessage denm = denmPacket.getDenm();
         ItsPduHeader header = denmPacket.getHeader();
         ManagementContainer managementContainer = denm.getManagement();        
@@ -314,7 +375,7 @@ public class LocalDenm{
     }
 
 
-    /* Check if the local DENM is valid. */
+    /* Check if the simple DENM is valid. */
     boolean isValid(){
         boolean valid = true;
 
@@ -371,9 +432,9 @@ public class LocalDenm{
         return valid;
     }    
 
-    /* Return values as a byte array for sending as a local DENM UDP message. */
+    /* Return values as a byte array for sending as a simple DENM UDP message. */
     byte[] asByteArray(){
-        byte[] packetBuffer = new byte[LOCAL_DENM_LENGTH];
+        byte[] packetBuffer = new byte[SIMPLE_DENM_LENGTH];
         ByteBuffer buffer = ByteBuffer.wrap(packetBuffer);
         buffer.put(messageID);
         buffer.putInt(stationID);
@@ -448,11 +509,7 @@ public class LocalDenm{
                                    null)
             :null;
 
-        /* Location container */        
-        /* TODO: Local message set needs support for variable length
-         * packets in order to add the Traces in the location
-         * container. Will not be implemented for GCDC16.
-         */
+        /* Location container */  
         LocationContainer locationContainer = (containerMask & (1<<6)) != 0 ?
             new LocationContainer()
             :null;

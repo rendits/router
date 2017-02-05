@@ -25,9 +25,9 @@ import net.gcdc.camdenm.CoopIts.ItsPduHeader.ProtocolVersion;
 import net.gcdc.camdenm.Iclcm.*;
 import net.gcdc.asn1.datatypes.IntRange;
 
-public class LocalIclcm{
+public class SimpleIclcm{
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
-    private final int LOCAL_iCLCM_LENGTH = 111;
+    private final int SIMPLE_iCLCM_LENGTH = 111;
 
     byte messageID;
     int stationID;
@@ -65,13 +65,90 @@ public class LocalIclcm{
     int platoonID;
     int distanceTravelledCz;
     int intention;
-    int counter;    
+    int counter;
 
-    /* For creating a local iCLCM from a UDP message as received from the vehicle control system. */
-    LocalIclcm(byte[] receivedData){
-        if(receivedData.length < LOCAL_iCLCM_LENGTH){
-            logger.error("Local iCLCM is too short. Is: {} Should be: {}", 
-                         receivedData.length, LOCAL_iCLCM_LENGTH);
+    /* Create a simple iCLCM by supplying the values manually. */
+    public SimpleIclcm(int stationID,
+                byte containerMask,
+                //HW Container
+                int rearAxleLocation,
+                int controllerType,
+                int responseTimeConstant,
+                int responseTimeDelay,
+                int targetLongAcc,
+                int timeHeadway,
+                int cruiseSpeed,
+                //LF Container
+                byte lowFrequencyMask,
+                int participantsReady,
+                int startPlatoon,
+                int endOfScenario,
+                //MIO Container
+                int mioID, 
+                int mioRange, 
+                int mioBearing, 
+                int mioRangeRate, 
+                //Lane Container
+                int lane,
+                //Pair ID Container
+                int forwardID, 
+                int backwardID, 
+                //Merge Container
+                int mergeRequest,
+                int mergeSafeToMerge,
+                int mergeFlag,
+                int mergeFlagTail,
+                int mergeFlagHead,
+                //Intersection Container
+                int platoonID,
+                int distanceTravelledCz,
+                int intention,
+                int counter) {
+
+        this.messageID = net.gcdc.camdenm.Iclcm.MessageID_iCLCM;
+        this.stationID = stationID;
+        this.containerMask = containerMask;
+        //HW Container
+        this.rearAxleLocation = rearAxleLocation;
+        this.controllerType = controllerType;
+        this.responseTimeConstant = responseTimeConstant;
+        this.responseTimeDelay = responseTimeDelay;
+        this.targetLongAcc = targetLongAcc;
+        this.timeHeadway = timeHeadway;
+        this.cruiseSpeed = cruiseSpeed;
+        //LF Container
+        this.lowFrequencyMask = lowFrequencyMask;
+        this.participantsReady = participantsReady;
+        this.startPlatoon = startPlatoon;
+        this.endOfScenario = endOfScenario;
+        //MIO Container
+        this.mioID = mioID; 
+        this.mioRange = mioRange; 
+        this.mioBearing = mioBearing; 
+        this.mioRangeRate = mioRangeRate; 
+        //Lane Container
+        this.lane = lane;
+        //Pair ID Container
+        this.forwardID = forwardID; 
+        this.backwardID = backwardID; 
+        //Merge Container
+        this.mergeRequest = mergeRequest;
+        this.mergeSafeToMerge = mergeSafeToMerge;
+        this.mergeFlag = mergeFlag;
+        this.mergeFlagTail = mergeFlagTail;
+        this.mergeFlagHead = mergeFlagHead;
+        //Intersection Container
+        this.platoonID = platoonID;
+        this.distanceTravelledCz = distanceTravelledCz;
+        this.intention = intention;
+        this.counter = counter;
+    }
+
+    /* For creating a simple iCLCM from a UDP message as received from the vehicle control system. */
+    public SimpleIclcm(byte[] receivedData){
+        if(receivedData.length < SIMPLE_iCLCM_LENGTH){
+            logger.error("Simple iCLCM is too short. Is: {} Should be: {}", 
+                         receivedData.length, SIMPLE_iCLCM_LENGTH);
             throw new IllegalArgumentException();            
         }
         ByteBuffer buffer = ByteBuffer.wrap(receivedData);
@@ -162,8 +239,8 @@ public class LocalIclcm{
     }
     
 
-    /* For creating a local iCLCM from a iCLCM message as received from another ITS station. */
-    LocalIclcm(IgameCooperativeLaneChangeMessage iCLCM){
+    /* For creating a simple iCLCM from a iCLCM message as received from another ITS station. */
+    public SimpleIclcm(IgameCooperativeLaneChangeMessage iCLCM){
         IgameCooperativeLaneChangeMessageBody iclcm = iCLCM.getIclm();
         ItsPduHeader header = iCLCM.getHeader();
         messageID = (byte) header.getMessageID().value;
@@ -242,7 +319,7 @@ public class LocalIclcm{
     }
 
 
-    /* Return true if the local CAM has a low frequency container. */
+    /* Return true if the simple iCLCM has a low frequency container. */
     boolean hasLowFrequencyContainer(){
         return (containerMask & (1<<7)) != 0;
     }
@@ -285,7 +362,7 @@ public class LocalIclcm{
     }
 
 
-    /* Check if the local iCLCM is valid. */
+    /* Check if the simple iCLCM is valid. */
     boolean isValid(){
         boolean valid = true;
 
@@ -319,9 +396,9 @@ public class LocalIclcm{
         return valid;
     }
 
-    /* Return values as a byte array for sending as a local iCLCM UDP message. */
-    byte[] asByteArray(){
-        byte[] packetBuffer = new byte[LOCAL_iCLCM_LENGTH];
+    /* Return values as a byte array for sending as a simple iCLCM UDP message. */
+    public byte[] asByteArray(){
+        byte[] packetBuffer = new byte[SIMPLE_iCLCM_LENGTH];
         ByteBuffer buffer = ByteBuffer.wrap(packetBuffer);
         buffer.put(messageID);
         buffer.putInt(stationID);
@@ -364,7 +441,7 @@ public class LocalIclcm{
     }
 
     /* Return values as a proper iCLCM message for sending to another ITS station. */
-    IgameCooperativeLaneChangeMessage asIclcm(){
+    public IgameCooperativeLaneChangeMessage asIclcm(){
         VehicleContainerHighFrequency vehicleContainerHighFrequency =
             new VehicleContainerHighFrequency(new VehicleRearAxleLocation(rearAxleLocation),
                                               new ControllerType(controllerType),

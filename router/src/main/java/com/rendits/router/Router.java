@@ -1,6 +1,6 @@
 /* Copyright 2016 Albin Severinson
  * Rendits vehicle router
- * Broadcasts incoming local messages
+ * Broadcasts incoming messages
  * Forwards incoming GeoNetworking messages to all subscribers.
  */
 
@@ -9,7 +9,12 @@ package com.rendits.router;
 /* Standard Java */
 import java.io.IOException;
 import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.nio.BufferOverflowException;
+import java.net.Socket;
+import java.net.ServerSocket;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -83,12 +88,18 @@ public class Router {
     public static InetAddress vehicle_address;
 
     /* Thread pool for all workers handling incoming/outgoing messages */
-    private static final ExecutorService executor = Executors.newCachedThreadPool();
+    private static ExecutorService executor;
 
     /* True while the threads should be running */
-    private static volatile boolean running = true;
+    private static volatile boolean running;
 
     public Router(Properties props) throws IOException {
+
+        /* Set running status to true */
+        running = true;
+
+        /* Start the thread pool */
+        executor = Executors.newCachedThreadPool();
 
         /* Create a new config */
         StationConfig config = new StationConfig();
@@ -132,15 +143,8 @@ public class Router {
         stationThread = new Thread(station);
         stationThread.start();
 
-        /*
-         * TODO: Race conditions in the beaconing service is causing it to send
-         * too many beacons. Turn off until it's fixed. We don't need the
-         * beaconing service for anything we're using it for anyway as it's
-         * supposed to be quiet when sending other traffic.
-         */
-        /*
-         * TODO: Thread crashes when attempting to send when the beaconing
-         * service isn't running.
+        /* Turn on the beaconing service. It transmits beacons while
+         * nothing else is transmitting. 
          */
         station.startBecon();
 
@@ -148,12 +152,17 @@ public class Router {
         btpSocket = BtpSocket.on(station);
 
         /* Start the loops that handle sending and receiving messages */
-        // TODO: Run a few threads of each. First investigate if
-        // BtpSocket.receive() if thread-safe.
-        executor.submit(receiveFromVehicle);
-        executor.submit(receiveFromVehicle);
-        executor.submit(receiveFromVehicle);        
-        executor.submit(sendToVehicle);
+        int numReceiveThreads = Integer.parseInt(props.getProperty("receiveThreads", "1"));
+        assert numReceiveThreads > 0;
+        for(int i = 0; i < numReceiveThreads; i++){
+            executor.submit(receiveFromVehicle);
+        }
+            
+        int numSendThreads = Integer.parseInt(props.getProperty("sendThreads", "1"));
+        assert numSendThreads > 0;
+        for(int i = 0; i < numSendThreads; i++){
+            executor.submit(sendToVehicle);
+        }
 
         /* Start thread that handles printing statistics to the log */
         statsLogger = new StatsLogger(executor);
@@ -280,15 +289,14 @@ public class Router {
              };
     }
         
-    /* Parse and forward a local simple message.
+    /* Parse and forward a simple simple message.
      */
-    // TODO: Replace local with simple
     private void properFromSimple(byte[] buffer) {
         switch(buffer[0]){
         case MessageId.cam: {
             try{                
-                LocalCam localCam = new LocalCam(buffer);
-                Cam cam = localCam.asCam();
+                SimpleCam simpleCam = new SimpleCam(buffer);
+                Cam cam = simpleCam.asCam();
                 send(cam);
                 statsLogger.incTxCam();
 
@@ -296,10 +304,10 @@ public class Router {
                  * stored vehicle position. Used when receiving
                  * messages and generating adresses.
                  */
-                double latitude = (double) localCam.latitude;
+                double latitude = (double) simpleCam.getLatitude();
                 latitude /= 1e7;
 
-                double longitude = (double) localCam.longitude;
+                double longitude = (double) simpleCam.getLongitude();
                 longitude /= 1e7;
 
                 vehiclePositionProvider.update(latitude, longitude);
@@ -311,8 +319,8 @@ public class Router {
 
         case MessageId.denm: {
             try {
-                LocalDenm localDenm = new LocalDenm(buffer);
-                Denm denm = localDenm.asDenm();
+                SimpleDenm simpleDenm = new SimpleDenm(buffer);
+                Denm denm = simpleDenm.asDenm();
 
                 /* Simple messages are sent to everyone within range. */
                 Position position = vehiclePositionProvider.getPosition();
@@ -328,8 +336,8 @@ public class Router {
 
         case net.gcdc.camdenm.Iclcm.MessageID_iCLCM: {
             try {
-                LocalIclcm localIclcm = new LocalIclcm(buffer);
-                IgameCooperativeLaneChangeMessage iclcm = localIclcm.asIclcm();
+                SimpleIclcm simpleIclcm = new SimpleIclcm(buffer);
+                IgameCooperativeLaneChangeMessage iclcm = simpleIclcm.asIclcm();
                 send(iclcm);
                 statsLogger.incTxIclcm();
 
@@ -344,7 +352,7 @@ public class Router {
         }
     }
     
-    /* Receive local messages from the control system, parse them into
+    /* Receive simple messages from the control system, parse them into
      * the proper message (CAM/DENM/iCLCM/custom) and forward to the
      * link layer.
      */
@@ -354,6 +362,7 @@ public class Router {
 
             @Override
             public void run() {
+                logger.info("Receive thread starting...");
                 while(running) {
                     try {
                         rcvSocket.receive(packet);
@@ -378,6 +387,7 @@ public class Router {
                         }
                     }
                 }
+                logger.info("Receive thread closing!");
             }
         };
 
@@ -386,8 +396,8 @@ public class Router {
         case PORT_CAM: {
             try {
                 Cam cam = UperEncoder.decode(btpPacket.payload(), Cam.class);
-                LocalCam localCam = new LocalCam(cam);
-                byte[] buffer = localCam.asByteArray();
+                SimpleCam simpleCam = new SimpleCam(cam);
+                byte[] buffer = simpleCam.asByteArray();
                 packet.setData(buffer, 0, buffer.length);
                 packet.setPort(vehicle_cam_port);                
 
@@ -406,8 +416,8 @@ public class Router {
         case PORT_DENM: {
             try {
                 Denm denm = UperEncoder.decode(btpPacket.payload(), Denm.class);
-                LocalDenm localDenm = new LocalDenm(denm);
-                byte[] buffer = localDenm.asByteArray();
+                SimpleDenm simpleDenm = new SimpleDenm(denm);
+                byte[] buffer = simpleDenm.asByteArray();
                 packet.setData(buffer, 0, buffer.length);
                 packet.setPort(vehicle_denm_port);
 
@@ -427,8 +437,8 @@ public class Router {
             try {
                 IgameCooperativeLaneChangeMessage iclcm = UperEncoder.decode(btpPacket.payload(),
                                                                              IgameCooperativeLaneChangeMessage.class);
-                LocalIclcm localIclcm = new LocalIclcm(iclcm);
-                byte[] buffer = localIclcm.asByteArray();
+                SimpleIclcm simpleIclcm = new SimpleIclcm(iclcm);
+                byte[] buffer = simpleIclcm.asByteArray();
                 packet.setData(buffer, 0, buffer.length);
                 packet.setPort(vehicle_iclcm_port);
 
@@ -458,6 +468,7 @@ public class Router {
             
             @Override
             public void run() {
+                logger.info("Send thread starting...");                
                 packet.setAddress(vehicle_address);
                 try{
                     while(running) {
@@ -467,6 +478,7 @@ public class Router {
                 } catch(InterruptedException e) {
                     logger.warn("BTP socket interrupted during receive");
                 }
+                logger.info("Send thread closing!");                                
             }
         };
 
@@ -572,7 +584,80 @@ public class Router {
         }
     }
 
-    /* Time to get the ball rolling! */
+    /* Class dedicated to running the router and listening to
+     * configuration changes over the network. Whenever a config
+     * change is received, the router is restarted with the new
+     * properties.
+     */
+    private static class RouterRunner implements Runnable {
+        Properties props;        
+        ServerSocket configSocket;
+
+        RouterRunner(Properties props) throws IOException {
+            this.props = props;
+
+            /* Setup the config socket used to push config changes
+             * over the network
+             */
+            int configPort = Integer.parseInt(props.getProperty("configPort"));
+            configSocket = new ServerSocket(configPort);
+        }
+
+        @Override
+        public void run() {
+            while(true) {
+                Router router = null;
+
+                /* Start the router */            
+                while(router == null){
+                    try{
+                        router = new Router(this.props);
+                    } catch(IOException e) {
+                        logger.error("IOException occurred when starting the router:", e);
+
+                        /* Sleep for a while before trying again */
+                        try{
+                            Thread.sleep(5000);
+                        } catch(InterruptedException ie) {
+                            logger.warn("RouterRunner interrupted when trying to start router.");
+                        }
+                    }
+                }
+
+                /* Wait for a config change to arrive */
+                while(true) {
+                    try{
+                        Socket clientSocket = configSocket.accept();
+                        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+
+
+                        props.load(in);                                                
+                        logger.info("Loaded props.." + props);
+
+                        in.close();                        
+                        clientSocket.close();
+
+                        break;
+                    
+                    } catch(IOException e) {
+
+                        /* Sleep for a while before trying again */
+                        try{
+                            Thread.sleep(2000);
+                        } catch(InterruptedException ie) {
+                            logger.warn("RouterRunner interrupted when waiting for config changes.");
+                        }
+                    }
+                }
+
+                /* Close the router. It will be restarted with the
+                 * updated properties in the next iteration. */
+                router.close();
+            }
+        }
+    }
+
     // TODO: Allow loading custom config via cli
     public static void main( String[] args) throws IOException {
 
@@ -582,13 +667,10 @@ public class Router {
         props.load(in);
         in.close();        
 
-        /* Start the router */
-        Router router = new Router(props);
-
-        /* Start a thread waiting for configuration changes over the
-         * network.
-         */
-
+        /* Time to get the ball rolling! */
+        RouterRunner r = new RouterRunner(props);
+        Thread t = new Thread(r);
+        t.start();
     }
 }
 /* That's all folks! */
