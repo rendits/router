@@ -408,11 +408,11 @@ public class Router {
             }
         };
 
-    private void simpleFromProper(BtpPacket btpPacket, DatagramPacket packet){
-        switch(btpPacket.destinationPort()) {
+    private void simpleFromProper(byte[] payload, int destinationPort, DatagramPacket packet){
+        switch(destinationPort) {
         case PORT_CAM: {
             try {
-                Cam cam = UperEncoder.decode(btpPacket.payload(), Cam.class);
+                Cam cam = UperEncoder.decode(payload, Cam.class);
                 SimpleCam simpleCam = new SimpleCam(cam);
                 byte[] buffer = simpleCam.asByteArray();
                 packet.setData(buffer, 0, buffer.length);
@@ -432,7 +432,7 @@ public class Router {
 
         case PORT_DENM: {
             try {
-                Denm denm = UperEncoder.decode(btpPacket.payload(), Denm.class);
+                Denm denm = UperEncoder.decode(payload, Denm.class);
                 SimpleDenm simpleDenm = new SimpleDenm(denm);
                 byte[] buffer = simpleDenm.asByteArray();
                 packet.setData(buffer, 0, buffer.length);
@@ -452,7 +452,7 @@ public class Router {
 
         case PORT_ICLCM: {
             try {
-                IgameCooperativeLaneChangeMessage iclcm = UperEncoder.decode(btpPacket.payload(),
+                IgameCooperativeLaneChangeMessage iclcm = UperEncoder.decode(payload,
                                                                              IgameCooperativeLaneChangeMessage.class);
                 SimpleIclcm simpleIclcm = new SimpleIclcm(iclcm);
                 byte[] buffer = simpleIclcm.asByteArray();
@@ -491,8 +491,10 @@ public class Router {
                     while(running) {
 						receiveLockBTP.lock();
                         BtpPacket btpPacket = btpSocket.receive();
+						byte[] payload = btpPacket.payload();
+						int destinationPort = btpPacket.destinationPort();
 						receiveLockBTP.unlock();
-                        simpleFromProper(btpPacket, packet);
+                        simpleFromProper(payload, destinationPort, packet);
                     }
                 } catch(InterruptedException e) {
 					if (receiveLockBTP.isHeldByCurrentThread()) {
