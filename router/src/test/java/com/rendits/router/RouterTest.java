@@ -14,6 +14,7 @@ import java.io.IOException;
 import net.gcdc.UdpDuplicator;
 
 public class RouterTest extends TestCase {
+        private final int MAX_UDP_LENGTH = 256;
 
         public RouterTest(String testName) {
                 super(testName);
@@ -23,7 +24,7 @@ public class RouterTest extends TestCase {
                 byte[] buffer;
                 DatagramPacket packet;
                 DatagramPacket rcvPacket;
-                int messagesToSend = 100;
+                int messagesToSend = 1000;
                 SimpleCam simpleCam = SampleMessages.getSampleCam();
                 SimpleDenm simpleDenm = SampleMessages.getSampleDenm();
                 SimpleIclcm simpleIclcm = SampleMessages.getSampleIclcm();
@@ -91,7 +92,7 @@ public class RouterTest extends TestCase {
 
                 /* Setup sockets */
                 DatagramSocket socket = new DatagramSocket(portSendIts);
-                socket.setSoTimeout(1000);
+                socket.setSoTimeout(10000);
                 InetAddress routerAddress = InetAddress.getByName("127.0.0.1");
 
                 /* Send some messages and make sure we get the same
@@ -99,11 +100,6 @@ public class RouterTest extends TestCase {
                 sendMessages(socket, routerAddress, portRcvFromVehicle);
 
                 /* Stop the router */
-                router.close();
-
-                /* Start it again and make sure everything still works. */
-                router = new Router(props);
-                sendMessages(socket, routerAddress, portRcvFromVehicle);
                 router.close();
         }
 }
