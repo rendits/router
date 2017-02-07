@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.Properties;
 import java.lang.IllegalArgumentException;
 
@@ -64,7 +65,7 @@ public class Router {
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
     private final Thread stationThread;
     private final GeonetStation station;
-    
+
     /* Incoming UDP messages */
     private final DatagramSocket rcvSocket;
     public final static int MAX_UDP_LENGTH = 600;
@@ -90,6 +91,11 @@ public class Router {
     /* Thread pool for all workers handling incoming/outgoing messages */
     private static ExecutorService executor;
 
+	/* Lock preventing threads from concurrently calling
+	   DatagramSocket.receive() and BtpSocket.receive(). */
+	ReentrantLock receiveLockUDP;
+	ReentrantLock receiveLockBTP;
+
     /* True while the threads should be running */
     private static volatile boolean running;
 
@@ -113,7 +119,7 @@ public class Router {
                                                          true);
 
         /* Configure vehicle address */
-        String vehicleAddress = props.getProperty("vehicleAddress");       
+        String vehicleAddress = props.getProperty("vehicleAddress");
         vehicle_address = InetAddress.getByName(vehicleAddress);
 
         /* Router mac address */
@@ -144,12 +150,16 @@ public class Router {
         stationThread.start();
 
         /* Turn on the beaconing service. It transmits beacons while
-         * nothing else is transmitting. 
+         * nothing else is transmitting.
          */
         station.startBecon();
 
         /* Start the BTP socket */
         btpSocket = BtpSocket.on(station);
+
+		/* Create the receive locks */
+		receiveLockUDP = new ReentrantLock();
+		receiveLockBTP = new ReentrantLock();
 
         /* Start the loops that handle sending and receiving messages */
         int numReceiveThreads = Integer.parseInt(props.getProperty("receiveThreads", "1"));
@@ -157,7 +167,7 @@ public class Router {
         for(int i = 0; i < numReceiveThreads; i++){
             executor.submit(receiveFromVehicle);
         }
-            
+
         int numSendThreads = Integer.parseInt(props.getProperty("sendThreads", "1"));
         assert numSendThreads > 0;
         for(int i = 0; i < numSendThreads; i++){
@@ -175,7 +185,7 @@ public class Router {
         running = false;
 
         /* Shutdown the GeoNet station */
-        station.close();        
+        station.close();
         stationThread.interrupt();
 
         /* Close the sockets */
@@ -183,7 +193,7 @@ public class Router {
         btpSocket.close();
 
         /* Shutdown the thread pool */
-        executor.shutdown();        
+        executor.shutdown();
 
         /* Give the threads 5 seconds before shutting down forcefully. */
         try {
@@ -200,9 +210,9 @@ public class Router {
      * broadcasting service and for generating Geonetworking addresses.
      */
     public static VehiclePositionProvider vehiclePositionProvider;
-    
+
     /* Statistics logging class */
-    private StatsLogger statsLogger;    
+    private StatsLogger statsLogger;
     private class StatsLogger {
         private int txCam = 0;
         private int rxCam = 0;
@@ -220,23 +230,23 @@ public class Router {
         public void incTxCam(){
             this.txCam++;
         }
-        
+
         public void incRxCam(){
             this.rxCam++;
         }
-        
+
         public void incTxDenm(){
             this.txDenm++;
         }
-        
+
         public void incRxDenm(){
             this.rxDenm++;
         }
-        
+
         public void incTxIclcm(){
             this.txIclcm++;
         }
-        
+
         public void incRxIclcm(){
             this.rxIclcm++;
         }
@@ -244,11 +254,11 @@ public class Router {
         public void incTxCustom(){
             this.txCustom++;
         }
-        
+
         public void incRxCustom(){
             this.rxCustom++;
-        }                
-        
+        }
+
         /* Dedicated thread for periodically logging statistics */
         private Runnable logStats = new Runnable() {
                 @Override
@@ -288,13 +298,13 @@ public class Router {
                 }
              };
     }
-        
+
     /* Parse and forward a simple simple message.
      */
     private void properFromSimple(byte[] buffer) {
         switch(buffer[0]){
         case MessageId.cam: {
-            try{                
+            try{
                 SimpleCam simpleCam = new SimpleCam(buffer);
                 Cam cam = simpleCam.asCam();
                 send(cam);
@@ -326,8 +336,8 @@ public class Router {
                 Position position = vehiclePositionProvider.getPosition();
                 Area target = Area.circle(position, Double.MAX_VALUE);
                 send(denm, Geobroadcast.geobroadcast(target));
-                statsLogger.incTxDenm();                
-            
+                statsLogger.incTxDenm();
+
             } catch(IllegalArgumentException e) {
                 logger.error("Irrecoverable error when creating DENM. Ignoring message.", e);
             }
@@ -351,7 +361,7 @@ public class Router {
             logger.warn("Received incorrectly formatted message. First byte: {}", buffer[0]);
         }
     }
-    
+
     /* Receive simple messages from the control system, parse them into
      * the proper message (CAM/DENM/iCLCM/custom) and forward to the
      * link layer.
@@ -365,16 +375,23 @@ public class Router {
                 logger.info("Receive thread starting...");
                 while(running) {
                     try {
+						receiveLockUDP.lock();
                         rcvSocket.receive(packet);
+						//logger.info("Received...");
                         byte[] receivedData = Arrays.copyOfRange(packet.getData(), packet.getOffset(),
                                                                  packet.getOffset() + packet.getLength());
+						//logger.info("Copied...");
+						receiveLockUDP.unlock();
+
                         // TODO: Replace with checks
                         assert(receivedData.length == packet.getLength());
 
                         /* Parse data and send forward message */
                         properFromSimple(receivedData);
-                        
                     } catch(IOException e) {
+						if (receiveLockUDP.isHeldByCurrentThread()) {
+							receiveLockUDP.unlock();
+						}
                         logger.error("Exception when receiving message from vehicle");
 
                         /* Sleep for a short time whenever an
@@ -399,7 +416,7 @@ public class Router {
                 SimpleCam simpleCam = new SimpleCam(cam);
                 byte[] buffer = simpleCam.asByteArray();
                 packet.setData(buffer, 0, buffer.length);
-                packet.setPort(vehicle_cam_port);                
+                packet.setPort(vehicle_cam_port);
 
                 try {
                     rcvSocket.send(packet);
@@ -455,7 +472,7 @@ public class Router {
         }
 
         default:
-            // fallthrough            
+            // fallthrough
         }
     }
 
@@ -465,20 +482,25 @@ public class Router {
     private Runnable sendToVehicle = new Runnable() {
             private final byte[] buffer = new byte[MAX_UDP_LENGTH];
             private final DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            
+
             @Override
             public void run() {
-                logger.info("Send thread starting...");                
+                logger.info("Send thread starting...");
                 packet.setAddress(vehicle_address);
                 try{
                     while(running) {
+						receiveLockBTP.lock();
                         BtpPacket btpPacket = btpSocket.receive();
+						receiveLockBTP.unlock();
                         simpleFromProper(btpPacket, packet);
                     }
                 } catch(InterruptedException e) {
+					if (receiveLockBTP.isHeldByCurrentThread()) {
+						receiveLockBTP.unlock();
+					}
                     logger.warn("BTP socket interrupted during receive");
                 }
-                logger.info("Send thread closing!");                                
+                logger.info("Send thread closing!");
             }
         };
 
@@ -529,7 +551,7 @@ public class Router {
         } catch (IOException e) {
             logger.warn("Failed to send iclcm", e);
         }
-    }    
+    }
 
 
     /* PositionProvider is used by the beaconing service and for creating the
@@ -590,7 +612,7 @@ public class Router {
      * properties.
      */
     private static class RouterRunner implements Runnable {
-        Properties props;        
+        Properties props;
         ServerSocket configSocket;
 
         RouterRunner(Properties props) throws IOException {
@@ -608,7 +630,7 @@ public class Router {
             while(true) {
                 Router router = null;
 
-                /* Start the router */            
+                /* Start the router */
                 while(router == null){
                     try{
                         router = new Router(this.props);
@@ -632,14 +654,14 @@ public class Router {
 
 
 
-                        props.load(in);                                                
+                        props.load(in);
                         logger.info("Loaded props.." + props);
 
-                        in.close();                        
+                        in.close();
                         clientSocket.close();
 
                         break;
-                    
+
                     } catch(IOException e) {
 
                         /* Sleep for a while before trying again */
@@ -665,7 +687,7 @@ public class Router {
         Properties props = new Properties();
         FileInputStream in = new FileInputStream("router.properties");
         props.load(in);
-        in.close();        
+        in.close();
 
         /* Time to get the ball rolling! */
         RouterRunner r = new RouterRunner(props);
