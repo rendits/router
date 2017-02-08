@@ -110,22 +110,24 @@ public class SimpleCam{
 		/* Assign values, checking if they are valid. Invalid values
 		   are replaced with default values if possible. */
         ByteBuffer buffer = ByteBuffer.wrap(receivedData);
-        messageID = buffer.get();
+        this.messageID = buffer.get();
         if(messageID != MessageId.cam){
-            logger.error("Simple CAM has incorrect id. Id: {} Should be: {}",
+            logger.error("MessageID is: {} Should be: {}",
                          messageID, MessageId.cam);
+            throw new IllegalArgumentException();
         }
-        stationID = buffer.getInt();
+
+        this.stationID = buffer.getInt();
         if(!checkInt(StationID.class, stationID, "StationID")){
             throw new IllegalArgumentException();
         }
 
-        genDeltaTimeMillis = buffer.getInt();
+        this.genDeltaTimeMillis = buffer.getInt();
         if(!checkInt(GenerationDeltaTime.class, genDeltaTimeMillis, "GenerationDeltaTime")){
             throw new IllegalArgumentException();
         }
 
-        containerMask = buffer.get();
+        this.containerMask = buffer.get();
         int stationType = buffer.getInt();
         if(checkInt(StationType.class, stationType, "StationType")){
 			this.stationType = stationType;
@@ -261,14 +263,6 @@ public class SimpleCam{
         } else {
 			this.vehicleRole = (int) VehicleRole.default_.value();
 		}
-
-        /* Verify that the values are correct and attempt to replace
-         * any errors with default values. */
-        if(messageID != MessageId.cam){
-            logger.error("MessageID is: {} Should be: {}",
-                         messageID, MessageId.cam);
-            throw new IllegalArgumentException();
-        }
     }
 
     /* For creating a simple CAM from a CAM message as received from another ITS station. */
