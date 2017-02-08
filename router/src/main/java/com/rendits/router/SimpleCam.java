@@ -29,28 +29,28 @@ public class SimpleCam{
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
     private final int SIMPLE_CAM_LENGTH = 82;
 
-    byte messageID = MessageId.cam;
-    int stationID;
-    int genDeltaTimeMillis;
-    byte containerMask;
-    int stationType;
-    int latitude;
-    int longitude;
-    int semiMajorAxisConfidence;
-    int semiMinorAxisConfidence;
-    int semiMajorOrientation;
-    int altitude;
-    int heading;
-    int headingConfidence;
-    int speed;
-    int speedConfidence;
-    int vehicleLength;
-    int vehicleWidth;
-    int longitudinalAcceleration;
-    int longitudinalAccelerationConfidence;
-    int yawRate;
-    int yawRateConfidence;
-    int vehicleRole;
+    final byte messageID;
+    final int stationID;
+    final int genDeltaTimeMillis;
+    final byte containerMask;
+    final int stationType;
+    final int latitude;
+    final int longitude;
+    final int semiMajorAxisConfidence;
+    final int semiMinorAxisConfidence;
+    final int semiMajorOrientation;
+    final int altitude;
+    final int heading;
+    final int headingConfidence;
+    final int speed;
+    final int speedConfidence;
+    final int vehicleLength;
+    final int vehicleWidth;
+    final int longitudinalAcceleration;
+    final int longitudinalAccelerationConfidence;
+    final int yawRate;
+    final int yawRateConfidence;
+    final int vehicleRole;
 
     /* Create a simple CAM by supplying the values manually. */
     public SimpleCam(int stationID,
@@ -75,7 +75,8 @@ public class SimpleCam{
                      int yawRateConfidence,
                      int vehicleRole) {
 
-        this.stationID = stationID;
+		this.messageID = MessageId.cam;
+		this.stationID = stationID;
         this.genDeltaTimeMillis = genDeltaTimeMillis;
         this.containerMask = containerMask;
         this.stationType = stationType;
@@ -106,6 +107,8 @@ public class SimpleCam{
             throw new IllegalArgumentException();
         }
 
+		/* Assign values, checking if they are valid. Invalid values
+		   are replaced with default values if possible. */
         ByteBuffer buffer = ByteBuffer.wrap(receivedData);
         messageID = buffer.get();
         if(messageID != MessageId.cam){
@@ -113,26 +116,151 @@ public class SimpleCam{
                          messageID, MessageId.cam);
         }
         stationID = buffer.getInt();
+        if(!checkInt(StationID.class, stationID, "StationID")){
+            throw new IllegalArgumentException();
+        }
+
         genDeltaTimeMillis = buffer.getInt();
+        if(!checkInt(GenerationDeltaTime.class, genDeltaTimeMillis, "GenerationDeltaTime")){
+            throw new IllegalArgumentException();
+        }
+
         containerMask = buffer.get();
-        stationType = buffer.getInt();
-        latitude = buffer.getInt();
-        longitude = buffer.getInt();
-        semiMajorAxisConfidence = buffer.getInt();
-        semiMinorAxisConfidence = buffer.getInt();
-        semiMajorOrientation = buffer.getInt();
-        altitude = buffer.getInt();
-        heading = buffer.getInt();
-        headingConfidence = buffer.getInt();
-        speed = buffer.getInt();
-        speedConfidence = buffer.getInt();
-        vehicleLength = buffer.getInt();
-        vehicleWidth = buffer.getInt();
-        longitudinalAcceleration = buffer.getInt();
-        longitudinalAccelerationConfidence = buffer.getInt();
-        yawRate = buffer.getInt();
-        yawRateConfidence = buffer.getInt();
-        vehicleRole = buffer.getInt();
+        int stationType = buffer.getInt();
+        if(checkInt(StationType.class, stationType, "StationType")){
+			this.stationType = stationType;
+		} else {
+            this.stationType = StationType.unknown;
+        }
+
+        int latitude = buffer.getInt();
+        if(checkInt(Latitude.class, latitude, "Latitude")){
+			this.latitude = latitude;
+		} else {
+			this.latitude = Latitude.unavailable;
+        }
+
+        int longitude = buffer.getInt();
+        if(checkInt(Longitude.class, longitude, "Longitude")){
+			this.longitude = longitude;
+		} else {
+            this.longitude = Longitude.unavailable;
+        }
+
+        int semiMajorAxisConfidence = buffer.getInt();
+        if(checkInt(SemiAxisLength.class, semiMajorAxisConfidence, "SemiMajorConfidence")){
+			this.semiMajorAxisConfidence = semiMajorAxisConfidence;
+		} else {
+            this.semiMajorAxisConfidence = SemiAxisLength.unavailable;
+        }
+
+        int semiMinorAxisConfidence = buffer.getInt();
+        if(checkInt(SemiAxisLength.class, semiMinorAxisConfidence, "SemiMinorConfidence")){
+			this.semiMinorAxisConfidence = semiMinorAxisConfidence;
+		} else {
+            this.semiMinorAxisConfidence = SemiAxisLength.unavailable;
+        }
+
+        int semiMajorOrientation = buffer.getInt();
+        if(checkInt(HeadingValue.class, semiMajorOrientation, "SemiMajorOrientation")){
+			this.semiMajorOrientation = semiMajorOrientation;
+		} else {
+            this.semiMajorOrientation = HeadingValue.unavailable;
+        }
+
+        int altitude = buffer.getInt();
+        if(checkInt(AltitudeValue.class, altitude, "Altitude")){
+			this.altitude = altitude;
+		} else {
+            this.altitude = AltitudeValue.unavailable;
+        }
+
+        int heading = buffer.getInt();
+        if(checkInt(HeadingValue.class, heading, "Heading")){
+			this.heading = heading;
+		} else {
+            this.heading = HeadingValue.unavailable;
+        }
+
+        int headingConfidence = buffer.getInt();
+        if(checkInt(HeadingConfidence.class, headingConfidence, "HeadingConfidence")){
+			this.headingConfidence = headingConfidence;
+		} else {
+            this.headingConfidence = HeadingConfidence.unavailable;
+        }
+
+        int speed = buffer.getInt();
+        if(checkInt(SpeedValue.class, speed, "Speed")){
+			this.speed = speed;
+		} else {
+            this.speed = SpeedValue.unavailable;
+        }
+
+        int speedConfidence = buffer.getInt();
+        if(checkInt(SpeedConfidence.class, speedConfidence, "SpeedConfidence")){
+			this.speedConfidence = speedConfidence;
+		} else {
+            this.speedConfidence = SpeedConfidence.unavailable;
+        }
+
+        int vehicleLength = buffer.getInt();
+        if(checkInt(VehicleLengthValue.class, vehicleLength, "VehicleLength")){
+			this.vehicleLength = vehicleLength;
+		} else {
+            this.vehicleLength = VehicleLengthValue.unavailable;
+        }
+
+        int vehicleWidth = buffer.getInt();
+        if(checkInt(VehicleWidth.class, vehicleWidth, "VehicleWidth")){
+			this.vehicleWidth = vehicleWidth;
+		} else {
+            this.vehicleWidth = VehicleWidth.unavailable;
+        }
+
+        int longitudinalAcceleration = buffer.getInt();
+        if(checkInt(LongitudinalAccelerationValue.class, longitudinalAcceleration, "LongitudinalAcceleration")){
+			this.longitudinalAcceleration = longitudinalAcceleration;
+		} else {
+            this.longitudinalAcceleration = LongitudinalAccelerationValue.unavailable;
+        }
+
+        int longitudinalAccelerationConfidence = buffer.getInt();
+        if(checkInt(AccelerationConfidence.class,
+                     longitudinalAccelerationConfidence,
+                     "LongitudinalAccelerationConfidence")){
+			this.longitudinalAccelerationConfidence = longitudinalAccelerationConfidence;
+		} else {
+            this.longitudinalAccelerationConfidence = AccelerationConfidence.unavailable;
+        }
+
+        int yawRate = buffer.getInt();
+        if(checkInt(YawRateValue.class, yawRate, "YawRate")){
+			this.yawRate = yawRate;
+		} else {
+            this.yawRate = YawRateValue.unavailable;
+        }
+
+        int yawRateConfidence = buffer.getInt();
+        /* TODO: Find a cleaner way to check enums. Also, this
+         * approach is not very informative.*/
+        if(YawRateConfidence.isMember(yawRateConfidence)){
+			this.yawRateConfidence = yawRateConfidence;
+		} else {
+            logger.warn("YawRateConfidence is not valid. Value={}", yawRateConfidence);
+            this.yawRateConfidence = (int) YawRateConfidence.unavailable.value();
+        }
+
+        int vehicleRole = buffer.getInt();
+        if(this.hasLowFrequencyContainer()){
+            if(VehicleRole.isMember(vehicleRole)){
+				this.vehicleRole = vehicleRole;
+			} else {
+                logger.warn("VehicleRole is not valid. Value={}", vehicleRole);
+                this.vehicleRole = (int) VehicleRole.default_.value();
+            }
+        } else {
+			this.vehicleRole = (int) VehicleRole.default_.value();
+		}
 
         /* Verify that the values are correct and attempt to replace
          * any errors with default values. */
@@ -140,77 +268,6 @@ public class SimpleCam{
             logger.error("MessageID is: {} Should be: {}",
                          messageID, MessageId.cam);
             throw new IllegalArgumentException();
-        }
-
-        if(!checkInt(StationID.class, stationID, "StationID")){
-            throw new IllegalArgumentException();
-        }
-        if(!checkInt(GenerationDeltaTime.class, genDeltaTimeMillis, "GenerationDeltaTime")){
-            throw new IllegalArgumentException();
-        }
-        if(!checkInt(StationType.class, stationType, "StationType")){
-            stationType = StationType.unknown;
-        }
-        if(!checkInt(Latitude.class, latitude, "Latitude")){
-            latitude = Latitude.unavailable;
-        }
-        if(!checkInt(Longitude.class, longitude, "Longitude")){
-            longitude = Longitude.unavailable;
-        }
-        if(!checkInt(SemiAxisLength.class, semiMajorAxisConfidence, "SemiMajorConfidence")){
-            semiMajorAxisConfidence = SemiAxisLength.unavailable;
-        }
-        if(!checkInt(SemiAxisLength.class, semiMinorAxisConfidence, "SemiMinorConfidence")){
-            semiMinorAxisConfidence = SemiAxisLength.unavailable;
-        }
-        if(!checkInt(HeadingValue.class, semiMajorOrientation, "SemiMajorOrientation")){
-            semiMajorOrientation = HeadingValue.unavailable;
-        }
-        if(!checkInt(AltitudeValue.class, altitude, "Altitude")){
-            altitude = AltitudeValue.unavailable;
-        }
-        if(!checkInt(HeadingValue.class, heading, "Heading")){
-            heading = HeadingValue.unavailable;
-        }
-        if(!checkInt(HeadingConfidence.class, headingConfidence, "HeadingConfidence")){
-            headingConfidence = HeadingConfidence.unavailable;
-        }
-        if(!checkInt(SpeedValue.class, speed, "Speed")){
-            speed = SpeedValue.unavailable;
-        }
-        if(!checkInt(SpeedConfidence.class, speedConfidence, "SpeedConfidence")){
-            speedConfidence = SpeedConfidence.unavailable;
-        }
-        if(!checkInt(VehicleLengthValue.class, vehicleLength, "VehicleLength")){
-            vehicleLength = VehicleLengthValue.unavailable;
-        }
-        if(!checkInt(VehicleWidth.class, vehicleWidth, "VehicleWidth")){
-            vehicleWidth = VehicleWidth.unavailable;
-        }
-        if(!checkInt(LongitudinalAccelerationValue.class, longitudinalAcceleration, "LongitudinalAcceleration")){
-            longitudinalAcceleration = LongitudinalAccelerationValue.unavailable;
-        }
-        if(!checkInt(AccelerationConfidence.class,
-                     longitudinalAccelerationConfidence,
-                     "LongitudinalAccelerationConfidence")){
-            longitudinalAccelerationConfidence = AccelerationConfidence.unavailable;
-        }
-        if(!checkInt(YawRateValue.class, yawRate, "YawRate")){
-            yawRate = YawRateValue.unavailable;
-        }
-
-        /* TODO: Find a cleaner way to check enums. Also, this
-         * approach is not very informative.*/
-        if(!YawRateConfidence.isMember(yawRateConfidence)){
-            logger.warn("YawRateConfidence is not valid. Value={}", yawRateConfidence);
-            yawRateConfidence = (int) YawRateConfidence.unavailable.value();
-        }
-
-        if(this.hasLowFrequencyContainer()){
-            if(!VehicleRole.isMember(vehicleRole)){
-                logger.warn("VehicleRole is not valid. Value={}", vehicleRole);
-                vehicleRole = (int) VehicleRole.default_.value();
-            }
         }
     }
 
@@ -264,7 +321,9 @@ public class SimpleCam{
             lowFrequencyContainer = camParameters.getLowFrequencyContainer();
             BasicVehicleContainerLowFrequency basicVehicleContainerLowFrequency = lowFrequencyContainer.getBasicVehicleContainerLowFrequency();
             vehicleRole = (int) basicVehicleContainerLowFrequency.getVehicleRole().value();
-        }
+        } else {
+			this.vehicleRole = (int) VehicleRole.default_.value();
+		}
 
         this.containerMask = containerMask;
     }
