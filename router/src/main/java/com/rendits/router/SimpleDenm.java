@@ -29,35 +29,35 @@ public class SimpleDenm{
     /* TODO: Is this the right way to keep sequence numbers? */
     private static int denmSequenceNumber = 0;
 
-    byte messageID = 1;
-    int stationID;
-    int generationDeltaTime;
-    byte containerMask;
-    byte managementMask;
-    int detectionTime;
-    int referenceTime;
-    int termination = 0;
-    int latitude;
-    int longitude;
-    int semiMajorConfidence;
-    int semiMinorConfidence;
-    int semiMajorOrientation;
-    int altitude;
-    int relevanceDistance;
-    int relevanceTrafficDirection;
-    int validityDuration;
-    int transmissionInterval;
-    int stationType;
-    byte situationMask;
-    int informationQuality;
-    int causeCode;
-    int subCauseCode;
-    int linkedCauseCode;
-    int linkedSubCauseCode;
-    byte alacarteMask;
-    int lanePosition;
-    int temperature;
-    int positioningSolutionType;
+    final byte messageID;
+    final int stationID;
+    final int generationDeltaTime;
+    final byte containerMask;
+    final byte managementMask;
+    final int detectionTime;
+    final int referenceTime;
+    final int termination;
+    final int latitude;
+    final int longitude;
+    final int semiMajorConfidence;
+    final int semiMinorConfidence;
+    final int semiMajorOrientation;
+    final int altitude;
+    final int relevanceDistance;
+    final int relevanceTrafficDirection;
+    final int validityDuration;
+    final int transmissionInterval;
+    final int stationType;
+    final byte situationMask;
+    final int informationQuality;
+    final int causeCode;
+    final int subCauseCode;
+    final int linkedCauseCode;
+    final int linkedSubCauseCode;
+    final byte alacarteMask;
+    final int lanePosition;
+    final int temperature;
+    final int positioningSolutionType;
 
     /* Create a simple DENM by supplying the values manually. */
     public SimpleDenm(int stationID,
@@ -89,34 +89,35 @@ public class SimpleDenm{
                       int temperature,
                       int positioningSolutionType) {
 
-    this.stationID = stationID;
-    this.generationDeltaTime = generationDeltaTime;
-    this.containerMask = containerMask;
-    this.managementMask = managementMask;
-    this.detectionTime = detectionTime;
-    this.referenceTime = referenceTime;
-    this.termination = termination;
-    this.latitude = latitude;
-    this.longitude = longitude;
-    this.semiMajorConfidence = semiMajorConfidence;
-    this.semiMinorConfidence = semiMinorConfidence;
-    this.semiMajorOrientation = semiMajorOrientation;
-    this.altitude = altitude;
-    this.relevanceDistance = relevanceDistance;
-    this.relevanceTrafficDirection = relevanceTrafficDirection;
-    this.validityDuration = validityDuration;
-    this.transmissionInterval = transmissionInterval;
-    this.stationType = stationType;
-    this.situationMask = situationMask;
-    this.informationQuality = informationQuality;
-    this.causeCode = causeCode;
-    this.subCauseCode = subCauseCode;
-    this.linkedCauseCode = linkedCauseCode;
-    this.linkedSubCauseCode = linkedSubCauseCode;
-    this.alacarteMask = alacarteMask;
-    this.lanePosition = lanePosition;
-    this.temperature = temperature;
-    this.positioningSolutionType = positioningSolutionType;
+		this.messageID = MessageId.denm;
+		this.stationID = stationID;
+		this.generationDeltaTime = generationDeltaTime;
+		this.containerMask = containerMask;
+		this.managementMask = managementMask;
+		this.detectionTime = detectionTime;
+		this.referenceTime = referenceTime;
+		this.termination = termination;
+		this.latitude = latitude;
+		this.longitude = longitude;
+		this.semiMajorConfidence = semiMajorConfidence;
+		this.semiMinorConfidence = semiMinorConfidence;
+		this.semiMajorOrientation = semiMajorOrientation;
+		this.altitude = altitude;
+		this.relevanceDistance = relevanceDistance;
+		this.relevanceTrafficDirection = relevanceTrafficDirection;
+		this.validityDuration = validityDuration;
+		this.transmissionInterval = transmissionInterval;
+		this.stationType = stationType;
+		this.situationMask = situationMask;
+		this.informationQuality = informationQuality;
+		this.causeCode = causeCode;
+		this.subCauseCode = subCauseCode;
+		this.linkedCauseCode = linkedCauseCode;
+		this.linkedSubCauseCode = linkedSubCauseCode;
+		this.alacarteMask = alacarteMask;
+		this.lanePosition = lanePosition;
+		this.temperature = temperature;
+		this.positioningSolutionType = positioningSolutionType;
 
     }
 
@@ -128,48 +129,31 @@ public class SimpleDenm{
             throw new IllegalArgumentException();
         }
 
+		/* Assign values, checking if they are valid. Invalid values
+		   are replaced with default values if possible. */
         ByteBuffer buffer = ByteBuffer.wrap(receivedData);
         messageID = buffer.get();
-        stationID = buffer.getInt();
-        generationDeltaTime  = buffer.getInt();
-        containerMask = buffer.get();
-        managementMask = buffer.get();
-        detectionTime = buffer.getInt();
-        referenceTime = buffer.getInt();
-        termination = buffer.getInt();
-        latitude = buffer.getInt();
-        longitude = buffer.getInt();
-        semiMajorConfidence = buffer.getInt();
-        semiMinorConfidence = buffer.getInt();
-        semiMajorOrientation = buffer.getInt();
-        altitude = buffer.getInt();
-        relevanceDistance = buffer.getInt();
-        relevanceTrafficDirection = buffer.getInt();
-        validityDuration = buffer.getInt();
-        transmissionInterval = buffer.getInt();
-        stationType = buffer.getInt();
-        situationMask = buffer.get();
-        informationQuality = buffer.getInt();
-        causeCode = buffer.getInt();
-        subCauseCode = buffer.getInt();
-        linkedCauseCode = buffer.getInt();
-        linkedSubCauseCode = buffer.getInt();
-        alacarteMask = buffer.get();
-        lanePosition = buffer.getInt();
-        temperature = buffer.getInt();
-        positioningSolutionType = buffer.getInt();
-
-        /* Verify that the values are correct and attempt to replace
-         * any errors with default values. */
         if(messageID != MessageId.denm){
             logger.error("Simple DENM has incorrect id. Id: {} Should be: {}",
                          messageID, MessageId.denm);
             throw new IllegalArgumentException();
         }
-        if(!checkInt(StationID.class, stationID, "StationID")) { throw new IllegalArgumentException(); }
-        if(!checkInt(GenerationDeltaTime.class, generationDeltaTime, "GenerationDeltaTime")) { throw new IllegalArgumentException(); }
-        //if(!checkInt(containerMask)) { .unavailable; }
-        //if(!checkInt(managementMask)) { .unavailable; }
+
+        stationID = buffer.getInt();
+        if(!checkInt(StationID.class, stationID, "StationID")) {
+			throw new IllegalArgumentException();
+		}
+
+        generationDeltaTime  = buffer.getInt();
+        if(!checkInt(GenerationDeltaTime.class, generationDeltaTime, "GenerationDeltaTime")) {
+			throw new IllegalArgumentException();
+		}
+
+        containerMask = buffer.get();
+        managementMask = buffer.get();
+
+        detectionTime = buffer.getInt();
+        referenceTime = buffer.getInt();
 
         /* These timestamps are handled differently that what the
          * spec. states. As a workaround to Matlab not supporting long
@@ -177,44 +161,145 @@ public class SimpleDenm{
          * We get the true timestamps by multiplying with 65536 and
          * adding the generationDeltaTime.
          */
-        if(!checkInt(TimestampIts.class, detectionTime * 65536 + generationDeltaTime, "DetectionTime")) { throw new IllegalArgumentException(); }
-        if(!checkInt(TimestampIts.class, referenceTime * 65536 + generationDeltaTime, "ReferenceTime")) { throw new IllegalArgumentException(); }
+        if(!checkInt(TimestampIts.class, detectionTime * 65536 + generationDeltaTime, "DetectionTime")) {
+			throw new IllegalArgumentException();
+		}
+        if(!checkInt(TimestampIts.class, referenceTime * 65536 + generationDeltaTime, "ReferenceTime")) {
+			throw new IllegalArgumentException();
+		}
 
-        if(!Termination.isMember(termination)){
+        int termination = buffer.getInt();
+        if(Termination.isMember(termination)){
+			this.termination = termination;
+		} else {
             logger.warn("Termination is not valid. Value={}", termination);
-            { termination = (int) Termination.defaultValue().value(); }
+            this.termination = (int) Termination.defaultValue().value();
         }
-        if(!checkInt(Latitude. class, latitude, "Latitude")) { latitude = Latitude.unavailable; }
-        if(!checkInt(Longitude.class, longitude, "Longitude")) { longitude = Longitude.unavailable; }
-        if(!checkInt(SemiAxisLength.class, semiMajorConfidence, "SemiMajorConfidence")) { semiMajorConfidence = SemiAxisLength.unavailable; }
-        if(!checkInt(SemiAxisLength.class, semiMinorConfidence, "SemiMinorConfidence")) { semiMinorConfidence = SemiAxisLength.unavailable; }
-        if(!checkInt(HeadingValue.class, semiMajorOrientation, "SemiMajorOrientation")) { semiMajorOrientation = HeadingValue.unavailable; }
-        if(!checkInt(AltitudeValue.class, altitude, "Altitude")) { altitude = AltitudeValue.unavailable; }
-        if(!RelevanceDistance.isMember(relevanceDistance)){
+
+        int latitude = buffer.getInt();
+        if(checkInt(Latitude. class, latitude, "Latitude")) {
+			this.latitude = latitude;
+		} else {
+			this.latitude = Latitude.unavailable;
+		}
+
+        int longitude = buffer.getInt();
+        if(checkInt(Longitude.class, longitude, "Longitude")) {
+			this.longitude = longitude;
+		} else {
+			this.longitude = Longitude.unavailable;
+		}
+
+        int semiMajorConfidence = buffer.getInt();
+        if(checkInt(SemiAxisLength.class, semiMajorConfidence, "SemiMajorConfidence")) {
+			this.semiMajorConfidence = semiMajorConfidence;
+		} else {
+			this.semiMajorConfidence = SemiAxisLength.unavailable;
+		}
+
+        int semiMinorConfidence = buffer.getInt();
+        if(checkInt(SemiAxisLength.class, semiMinorConfidence, "SemiMinorConfidence")) {
+			this.semiMinorConfidence = semiMinorConfidence;
+		} else {
+			this.semiMinorConfidence = SemiAxisLength.unavailable;
+		}
+
+        int semiMajorOrientation = buffer.getInt();
+		if(checkInt(HeadingValue.class, semiMajorOrientation, "SemiMajorOrientation")) {
+			this.semiMajorOrientation = semiMajorOrientation;
+		} else {
+			this.semiMajorOrientation = HeadingValue.unavailable;
+		}
+
+        int altitude = buffer.getInt();
+        if(checkInt(AltitudeValue.class, altitude, "Altitude")) {
+			this.altitude = altitude;
+		} else {
+			this.altitude = AltitudeValue.unavailable;
+		}
+
+        int relevanceDistance = buffer.getInt();
+        if(RelevanceDistance.isMember(relevanceDistance)){
+			this.relevanceDistance = relevanceDistance;
+		} else {
             logger.warn("RelevanceDistance is not valid. Value={}", relevanceDistance);
-            { relevanceDistance = (int) RelevanceDistance.defaultValue().value(); }
+            this.relevanceDistance = (int) RelevanceDistance.defaultValue().value();
         }
 
-        if(!RelevanceTrafficDirection.isMember(relevanceTrafficDirection)){
+        int relevanceTrafficDirection = buffer.getInt();
+        if(RelevanceTrafficDirection.isMember(relevanceTrafficDirection)){
+			this.relevanceTrafficDirection = relevanceTrafficDirection;
+		} else {
             logger.error("RelevanceTrafficDirection is not valid. Value={}", relevanceTrafficDirection);
-            { relevanceTrafficDirection = RelevanceTrafficDirection.defaultValue().value(); }
+            this.relevanceTrafficDirection = RelevanceTrafficDirection.defaultValue().value();
         }
-        if(!checkInt(ValidityDuration.class, validityDuration, "ValidityDuration")) { validityDuration = (int) net.gcdc.camdenm.CoopIts.defaultValidity.value; }
-        if(!checkInt(TransmissionInterval.class, transmissionInterval, "TransmissionInterval")) { transmissionInterval = TransmissionInterval.oneMilliSecond * 100; }
-        if(!checkInt(StationType.class, stationType, "StationType")) { stationType = StationType.unknown; }
 
-        //if(!checkInt(situationMask)) { .unavailable; }
-        if(!checkInt(InformationQuality.class, informationQuality, "InformationQuality")) { informationQuality = InformationQuality.unavailable; }
-        if(!checkInt(CauseCodeType.class, causeCode, "CauseCode")) { throw new IllegalArgumentException(); }
-        if(!checkInt(SubCauseCodeType.class, subCauseCode, "SubCauseCode")) { throw new IllegalArgumentException(); }
-        if(!checkInt(CauseCodeType.class, linkedCauseCode, "LinkedCauseCode")) { throw new IllegalArgumentException(); }
-        if(!checkInt(SubCauseCodeType.class, linkedSubCauseCode, "LinkedSubCauseCode")) { throw new IllegalArgumentException(); }
-        //if(!checkInt(alacarteMask)) { .unavailable; }
-        if(!checkInt(LanePosition.class, lanePosition, "LanePosition")) { throw new IllegalArgumentException(); }
-        if(!checkInt(Temperature.class, temperature, "Temperature")) { temperature = 27; } /*  It's always 27C in Gothenburg :) */
+        int validityDuration = buffer.getInt();
+        if(checkInt(ValidityDuration.class, validityDuration, "ValidityDuration")) {
+			this.validityDuration = validityDuration;
+		} else {
+			this.validityDuration = (int) net.gcdc.camdenm.CoopIts.defaultValidity.value;
+		}
+
+        int transmissionInterval = buffer.getInt();
+        if(checkInt(TransmissionInterval.class, transmissionInterval, "TransmissionInterval")) {
+			this.transmissionInterval = transmissionInterval;
+		} else {
+			this.transmissionInterval = TransmissionInterval.oneMilliSecond * 100;
+		}
+
+        int stationType = buffer.getInt();
+        if(checkInt(StationType.class, stationType, "StationType")) {
+			this.stationType = stationType;
+		} else {
+			this.stationType = StationType.unknown;
+		}
+
+        this.situationMask = buffer.get();
+        int informationQuality = buffer.getInt();
+        if(checkInt(InformationQuality.class, informationQuality, "InformationQuality")) {
+			this.informationQuality = informationQuality;
+		} else {
+			this.informationQuality = InformationQuality.unavailable;
+		}
+
+        this.causeCode = buffer.getInt();
+        if(!checkInt(CauseCodeType.class, causeCode, "CauseCode")) {
+			throw new IllegalArgumentException();
+		}
+
+        this.subCauseCode = buffer.getInt();
+        if(!checkInt(SubCauseCodeType.class, subCauseCode, "SubCauseCode")) {
+			throw new IllegalArgumentException();
+		}
+
+        this.linkedCauseCode = buffer.getInt();
+        if(!checkInt(CauseCodeType.class, linkedCauseCode, "LinkedCauseCode")) {
+			throw new IllegalArgumentException();
+		}
+
+        this.linkedSubCauseCode = buffer.getInt();
+        if(!checkInt(SubCauseCodeType.class, linkedSubCauseCode, "LinkedSubCauseCode")) {
+			throw new IllegalArgumentException();
+		}
+
+        this.alacarteMask = buffer.get();
+        this.lanePosition = buffer.getInt();
+        if(!checkInt(LanePosition.class, lanePosition, "LanePosition")) {
+			throw new IllegalArgumentException();
+		}
+
+        int temperature = buffer.getInt();
+        if(checkInt(Temperature.class, temperature, "Temperature")) {
+			this.temperature = temperature;
+		} else {
+			this.temperature = 0;
+		}
+
+        this.positioningSolutionType = buffer.getInt();
         if(!PositioningSolutionType.isMember(positioningSolutionType)){
-            logger.warn("PositioningSolutionType is not valid. Value={}", positioningSolutionType);
-            { throw new IllegalArgumentException(); }
+            logger.warn("PositioningSolutionType is not valid. Value={ } else { }", positioningSolutionType);
+            throw new IllegalArgumentException();
         }
     }
 
@@ -226,7 +311,7 @@ public class SimpleDenm{
         messageID = (byte) header.getMessageID().value;
         stationID = (int) header.getStationID().value;
         generationDeltaTime = (int) managementContainer.getReferenceTime().value % 65536;
-        containerMask = 0;
+        byte containerMask = 0;
 
         if(messageID != MessageId.denm){
             logger.warn("Malformed message on BTP port 2002 from station with ID {}", stationID);
@@ -234,7 +319,7 @@ public class SimpleDenm{
         }
 
         /* ManagementContainer */
-        managementMask = 0;
+        byte managementMask = 0;
 
         //buffer.putInt((int) managementContainer.getActionID().getOriginatingStationID().value);
         detectionTime = (int) managementContainer.getDetectionTime().value / 65536;
@@ -243,7 +328,9 @@ public class SimpleDenm{
         if(managementContainer.hasTermination()){
             managementMask += (1<<7);
             termination = (int) managementContainer.getTermination().value();
-        }
+        } else {
+            termination = (int) Termination.defaultValue().value();
+		}
 
         latitude = (int) managementContainer.getEventPosition().getLatitude().value;
         longitude = (int) managementContainer.getEventPosition().getLongitude().value;
@@ -255,28 +342,37 @@ public class SimpleDenm{
         if(managementContainer.hasRelevanceDistance()){
             managementMask += (1<<6);
             relevanceDistance = (int) managementContainer.getRelevanceDistance().value();
-        }
+        } else {
+            relevanceDistance = (int) RelevanceDistance.defaultValue().value();
+		}
 
         if(managementContainer.hasRelevanceTrafficDirection()){
             managementMask += (1<<5);
             relevanceTrafficDirection = (int) managementContainer.getRelevanceTrafficDirection().value();
-        }
+        } else {
+            relevanceTrafficDirection = RelevanceTrafficDirection.defaultValue().value();
+		}
 
         if(managementContainer.hasValidityDuration()){
             managementMask += (1<<4);
             validityDuration = (int) managementContainer.getValidityDuration().value;
-        }
+        } else {
+			validityDuration = (int) net.gcdc.camdenm.CoopIts.defaultValidity.value;
+		}
 
         if(managementContainer.hasTransmissionInterval()){
             managementMask += (1<<3);
             transmissionInterval = (int) managementContainer.getTransmissionInterval().value;
-        }
+        } else {
+			transmissionInterval = TransmissionInterval.oneMilliSecond * 100;
+		}
 
         stationType = (int) managementContainer.getStationType().value;
+		this.managementMask = managementMask;
 
         /* SituationContainer */
         SituationContainer situationContainer = null;
-        situationMask = 0;
+        byte situationMask = 0;
         if(denm.hasSituation()){
             containerMask += (1<<7);
             situationContainer = denm.getSituation();
@@ -289,8 +385,18 @@ public class SimpleDenm{
                 situationMask += (1<<7);
                 linkedCauseCode = (int) situationContainer.getLinkedCause().getCauseCode().value;
                 linkedSubCauseCode = (int) situationContainer.getLinkedCause().getSubCauseCode().value;
-            }
-        }
+            } else {
+				linkedCauseCode = 0;
+				linkedSubCauseCode = 0;
+			}
+        } else {
+			informationQuality = InformationQuality.unavailable;
+			causeCode = 0;
+			subCauseCode = 0;
+			linkedCauseCode = 0;
+			linkedSubCauseCode = 0;
+		}
+		this.situationMask = situationMask;
 
         /* Not used for GCDC16 */
         /* LocationContainer */
@@ -327,7 +433,7 @@ public class SimpleDenm{
         /* AlacarteContainer */
         AlacarteContainer alacarteContainer = null;
 
-        alacarteMask = 0;
+        byte alacarteMask = 0;
         if(denm.hasAlacarte()){
             containerMask += (1<<5);
             alacarteContainer = denm.getAlacarte();
@@ -335,18 +441,30 @@ public class SimpleDenm{
             if(alacarteContainer.hasLanePosition()){
                 alacarteMask += (1<<7);
                 lanePosition = (int) alacarteContainer.getLanePosition().value;
-            }
+            } else {
+				lanePosition = 0;
+			}
 
             if(alacarteContainer.hasExternalTemperature()){
                 alacarteMask += (1<<5);
                 temperature = (int) alacarteContainer.getExternalTemperature().value;
-            }
+            } else {
+				temperature = 0;
+			}
 
             if(alacarteContainer.hasPositioningSolution()){
                 alacarteMask += (1<<3);
                 positioningSolutionType = (int) alacarteContainer.getPositioningSolution().value();
-            }
-        }
+            } else {
+				positioningSolutionType = 0;
+			}
+        } else {
+			lanePosition = 0;
+			temperature = 0;
+			positioningSolutionType = 0;
+		}
+		this.alacarteMask = alacarteMask;
+		this.containerMask = containerMask;
     }
 
     /* Return the IntRange min and max value as a nice string. */
