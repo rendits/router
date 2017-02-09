@@ -1,16 +1,12 @@
 package com.rendits.router;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 import net.gcdc.camdenm.Iclcm.IgameCooperativeLaneChangeMessage;
 
-public class SimpleIclcmTest extends TestCase {
+public class SimpleIclcmTest {
 
-        public SimpleIclcmTest(String testName) {
-                super(testName);
-        }
-
+        @Test
         public void testIclcm() {
                 SimpleIclcm simpleIclcm = SampleMessages.getSampleIclcm();
                 byte[] buffer = simpleIclcm.asByteArray();

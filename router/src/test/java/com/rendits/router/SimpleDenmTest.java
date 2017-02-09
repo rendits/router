@@ -1,16 +1,12 @@
 package com.rendits.router;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 import net.gcdc.camdenm.CoopIts.Denm;
 
-public class SimpleDenmTest extends TestCase {
+public class SimpleDenmTest {
 
-        public SimpleDenmTest(String testName) {
-                super(testName);
-        }
-
+        @Test
         public void testDenm() {
                 SimpleDenm simpleDenm = SampleMessages.getSampleDenm();
                 byte[] buffer = simpleDenm.asByteArray();

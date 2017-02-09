@@ -1,8 +1,15 @@
 package com.rendits.router;
 
+/*
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+*/
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
+import org.junit.Test;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.InetAddress;
@@ -10,15 +17,23 @@ import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.net.SocketTimeoutException;
 import java.util.Properties;
+import java.util.Arrays;
 import java.io.IOException;
 import net.gcdc.UdpDuplicator;
 
-public class RouterTest extends TestCase {
+public class RouterTest {
         private final int MAX_UDP_LENGTH = 256;
 
+        /*
         public RouterTest(String testName) {
                 super(testName);
         }
+
+
+        private void assertArrayEquals(byte[] esperado, byte[] real) {
+                assertEquals(Arrays.asList(esperado), Arrays.asList(real));
+        }
+        */
 
         private void sendMessages(DatagramSocket socket, InetAddress routerAddress, int portRcvFromVehicle) throws IOException {
                 byte[] buffer;
@@ -54,11 +69,13 @@ public class RouterTest extends TestCase {
                         packet.setAddress(routerAddress);
                         socket.send(packet);
                         socket.receive(rcvPacket);
-                        assertEquals(simpleIclcm, new SimpleIclcm(rcvPacket.getData()));
+                        assertArrayEquals(buffer, rcvPacket.getData());
+                        // assertEquals(simpleIclcm, new SimpleIclcm(rcvPacket.getData()));
                 }
                 return;
         }
 
+        @Test
         public void testIntegrity() throws IOException {
                 int portRcvFromVehicle = 5000;
                 int portSendIts = 5001;
@@ -77,7 +94,8 @@ public class RouterTest extends TestCase {
                 props.setProperty("sendThreads", "1");
                 props.setProperty("vehicleAddress", vehicleAddress);
                 props.setProperty("localPortForUdpLinkLayer", "" + localPortForUdpLinkLayer);
-                props.setProperty("remoteAddressForUdpLinkLayer", remoteAddressForUdpLinkLayer + ":" + remotePortForUdpLinkLayer);
+                props.setProperty("remoteAddressForUdpLinkLayer",
+                                  remoteAddressForUdpLinkLayer + ":" + remotePortForUdpLinkLayer);
                 props.setProperty("macAddress", "00:00:00:00:00:00");
                 props.setProperty("countryCode", "46");
 
@@ -92,7 +110,7 @@ public class RouterTest extends TestCase {
 
                 /* Setup sockets */
                 DatagramSocket socket = new DatagramSocket(portSendIts);
-                socket.setSoTimeout(10000);
+                socket.setSoTimeout(1000);
                 InetAddress routerAddress = InetAddress.getByName("127.0.0.1");
 
                 /* Send some messages and make sure we get the same
