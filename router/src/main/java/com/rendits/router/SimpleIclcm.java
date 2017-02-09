@@ -29,43 +29,43 @@ public class SimpleIclcm{
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
     private final int SIMPLE_iCLCM_LENGTH = 111;
 
-    byte messageID;
-    int stationID;
-    byte containerMask;
+    final byte messageID;
+    final int stationID;
+    final byte containerMask;
     //HW Container
-    int rearAxleLocation;
-    int controllerType;
-    int responseTimeConstant;
-    int responseTimeDelay;
-    int targetLongAcc;
-    int timeHeadway;
-    int cruiseSpeed;
+    final int rearAxleLocation;
+    final int controllerType;
+    final int responseTimeConstant;
+    final int responseTimeDelay;
+    final int targetLongAcc;
+    final int timeHeadway;
+    final int cruiseSpeed;
     //LF Container
-    byte lowFrequencyMask;
-    int participantsReady;
-    int startPlatoon;
-    int endOfScenario;
+    final byte lowFrequencyMask;
+    final int participantsReady;
+    final int startPlatoon;
+    final int endOfScenario;
     //MIO Container
-    int mioID;
-    int mioRange;
-    int mioBearing;
-    int mioRangeRate;
+    final int mioID;
+    final int mioRange;
+    final int mioBearing;
+    final int mioRangeRate;
     //Lane Container
-    int lane;
+    final int lane;
     //Pair ID Container
-    int forwardID;
-    int backwardID;
+    final int forwardID;
+    final int backwardID;
     //Merge Container
-    int mergeRequest;
-    int mergeSafeToMerge;
-    int mergeFlag;
-    int mergeFlagTail;
-    int mergeFlagHead;
+    final int mergeRequest;
+    final int mergeSafeToMerge;
+    final int mergeFlag;
+    final int mergeFlagTail;
+    final int mergeFlagHead;
     //Intersection Container
-    int platoonID;
-    int distanceTravelledCz;
-    int intention;
-    int counter;
+    final int platoonID;
+    final int distanceTravelledCz;
+    final int intention;
+    final int counter;
 
     /* Create a simple iCLCM by supplying the values manually. */
     public SimpleIclcm(int stationID,
@@ -151,91 +151,188 @@ public class SimpleIclcm{
                          receivedData.length, SIMPLE_iCLCM_LENGTH);
             throw new IllegalArgumentException();
         }
+
+		/* Assign values, checking if they are valid. Invalid values
+		   are replaced with default values if possible. */
         ByteBuffer buffer = ByteBuffer.wrap(receivedData);
-        messageID = buffer.get();
-
-
-        stationID = buffer.getInt();
-        containerMask = buffer.get();
-        //HW Container
-        rearAxleLocation = buffer.getInt();
-        controllerType = buffer.getInt();
-        responseTimeConstant = buffer.getInt();
-        responseTimeDelay = buffer.getInt();
-        targetLongAcc = buffer.getInt();
-        timeHeadway = buffer.getInt();
-        cruiseSpeed = buffer.getInt();
-        //LF Container
-        lowFrequencyMask = buffer.get();
-        participantsReady = buffer.getInt();
-        startPlatoon = buffer.getInt();
-        endOfScenario = buffer.getInt();
-        //MIO Container
-        mioID = buffer.getInt();
-        mioRange = buffer.getInt();
-        mioBearing = buffer.getInt();
-        mioRangeRate = buffer.getInt();
-        //Lane container
-        lane = buffer.getInt();
-        //Pair ID container
-        forwardID = buffer.getInt();
-        backwardID = buffer.getInt();
-        //Merge container
-        mergeRequest = buffer.getInt();
-        mergeSafeToMerge = buffer.getInt();
-        mergeFlag = buffer.getInt();
-        mergeFlagTail = buffer.getInt();
-        mergeFlagHead = buffer.getInt();
-        //Intersection Container
-        platoonID = buffer.getInt();
-        distanceTravelledCz = buffer.getInt();
-        intention = buffer.getInt();
-        counter = buffer.getInt();
-
-        /* Verify that the values are correct and attempt to replace
-         * any errors with default values. */
+        this.messageID = buffer.get();
         if(messageID != net.gcdc.camdenm.Iclcm.MessageID_iCLCM){
             logger.error("MessageID is: {} Should be: {}",
                          messageID, net.gcdc.camdenm.Iclcm.MessageID_iCLCM);
             throw new IllegalArgumentException();
         }
 
-        if(!checkInt(StationID.class, stationID, "StationID")){ throw new IllegalArgumentException(); }
-        if(!checkInt(VehicleRearAxleLocation.class, rearAxleLocation, "RearAxleLocation")){ throw new IllegalArgumentException(); }
-        if(!checkInt(ControllerType.class, controllerType, "ControllerType")){ throw new IllegalArgumentException(); }
-        if(!checkInt(VehicleResponseTimeConstant.class, responseTimeConstant, "ResponseTimeConstant")){ responseTimeConstant = VehicleResponseTimeConstant.unavailable; }
-        if(!checkInt(VehicleResponseTimeDelay.class, responseTimeDelay, "ResponseTimeDelay")){ responseTimeDelay = VehicleResponseTimeDelay.unavailable; }
-        if(!checkInt(TargetLongitudonalAcceleration.class, targetLongAcc, "TargetLongitudinalAcceleration")){ targetLongAcc = TargetLongitudonalAcceleration.unavailable; }
-        if(!checkInt(TimeHeadway.class, timeHeadway, "TimeHeadway")){ timeHeadway = TimeHeadway.unavailable; }
-        if(!checkInt(CruiseSpeed.class, cruiseSpeed, "CruiseSpeed")){ cruiseSpeed = CruiseSpeed.unavailable; }
+        this.stationID = buffer.getInt();
+        if(!checkInt(StationID.class, stationID, "StationID")){
+			throw new IllegalArgumentException();
+		}
 
+        this.containerMask = buffer.get();
+
+        //HW Container
+        this.rearAxleLocation = buffer.getInt();
+        if(!checkInt(VehicleRearAxleLocation.class, rearAxleLocation, "RearAxleLocation")){
+			throw new IllegalArgumentException();
+		}
+
+        this.controllerType = buffer.getInt();
+        if(!checkInt(ControllerType.class, controllerType, "ControllerType")){
+			throw new IllegalArgumentException();
+		}
+
+        int responseTimeConstant = buffer.getInt();
+        if(checkInt(VehicleResponseTimeConstant.class, responseTimeConstant, "ResponseTimeConstant")){
+			this.responseTimeConstant = responseTimeConstant;
+		} else {
+			this.responseTimeConstant = VehicleResponseTimeConstant.unavailable;
+		}
+
+        int responseTimeDelay = buffer.getInt();
+        if(checkInt(VehicleResponseTimeDelay.class, responseTimeDelay, "ResponseTimeDelay")){
+			this.responseTimeDelay = responseTimeDelay;
+		} else {
+			this.responseTimeDelay = VehicleResponseTimeDelay.unavailable;
+		}
+
+        int targetLongAcc = buffer.getInt();
+        if(checkInt(TargetLongitudonalAcceleration.class, targetLongAcc, "TargetLongitudinalAcceleration")){
+			this.targetLongAcc = targetLongAcc;
+		} else {
+			this.targetLongAcc = TargetLongitudonalAcceleration.unavailable;
+		}
+
+        int timeHeadway = buffer.getInt();
+        if(checkInt(TimeHeadway.class, timeHeadway, "TimeHeadway")){
+			this.timeHeadway = timeHeadway;
+		} else {
+			this.timeHeadway = TimeHeadway.unavailable;
+		}
+
+        int cruiseSpeed = buffer.getInt();
+        if(checkInt(CruiseSpeed.class, cruiseSpeed, "CruiseSpeed")){
+			this.cruiseSpeed = cruiseSpeed;
+		} else {
+			this.cruiseSpeed = CruiseSpeed.unavailable;
+		}
+
+        //LF Container
+        this.lowFrequencyMask = buffer.get();
+        this.participantsReady = buffer.getInt();
+        this.startPlatoon = buffer.getInt();
+        this.endOfScenario = buffer.getInt();
         if(this.hasLowFrequencyContainer()){
             if(this.hasParticipantsReady())
-                if(!checkInt(ParticipantsReady.class, participantsReady, "ParticipantsReady")){ throw new IllegalArgumentException(); }
+                if(!checkInt(ParticipantsReady.class, participantsReady, "ParticipantsReady")){
+					throw new IllegalArgumentException();
+				}
 
             if(this.hasStartPlatoon())
-                if(!checkInt(StartPlatoon.class, startPlatoon, "StartPlatoon")){ throw new IllegalArgumentException(); }
+                if(!checkInt(StartPlatoon.class, startPlatoon, "StartPlatoon")){
+					throw new IllegalArgumentException();
+				}
 
             if(this.hasEndOfScenario())
-                if(!checkInt(EndOfScenario.class, endOfScenario, "EndOfScenario")){ throw new IllegalArgumentException(); }
+                if(!checkInt(EndOfScenario.class, endOfScenario, "EndOfScenario")){
+					throw new IllegalArgumentException();
+				}
         }
 
-        if(!checkInt(StationID.class, mioID, "MioID")){ throw new IllegalArgumentException(); }
-        if(!checkInt(MioRange.class, mioRange, "MioRange")){ mioRange = MioRange.unavailable; }
-        if(!checkInt(MioBearing.class, mioBearing, "MioBearing")){ mioBearing = MioBearing.unavailable; }
-        if(!checkInt(MioRangeRate.class, mioRangeRate, "MioRangeRate")){ mioRangeRate = MioRangeRate.unavailable; }
-        if(!checkInt(Lane.class, lane, "Lane")){ lane = Lane.unavailable; }
-        if(!checkInt(StationID.class, forwardID, "ForwardID")){ throw new IllegalArgumentException(); }
-        if(!checkInt(StationID.class, backwardID, "BackwardID")){ throw new IllegalArgumentException(); }
-        if(!checkInt(MergeRequest.class, mergeRequest, "MergeRequest")){ throw new IllegalArgumentException(); }
-        if(!checkInt(MergeSafeToMerge.class, mergeSafeToMerge, "MergeSafeToMerge")){ throw new IllegalArgumentException(); }
-        if(!checkInt(MergeFlag.class, mergeFlag, "MergeFlag")){ throw new IllegalArgumentException(); }
-        if(!checkInt(MergeFlagTail.class, mergeFlagTail, "MergeFLagTail")){ throw new IllegalArgumentException(); }
-        if(!checkInt(MergeFlagHead.class, mergeFlagHead, "MergeFlagHead")){ throw new IllegalArgumentException(); }
-        if(!checkInt(PlatoonID.class, platoonID, "PlatoonID")){ throw new IllegalArgumentException(); }
-        if(!checkInt(DistanceTravelledCZ.class, distanceTravelledCz, "DistanceTravelledCz")){ distanceTravelledCz = 0; }
-        if(!checkInt(Intention.class, intention, "Intention")){ throw new IllegalArgumentException(); }
-        if(!checkInt(Counter.class, counter, "Counter")){ counter = 0; }
+        //MIO Container
+        mioID = buffer.getInt();
+        if(!checkInt(StationID.class, mioID, "MioID")){
+			throw new IllegalArgumentException();
+		}
+
+        int mioRange = buffer.getInt();
+        if(checkInt(MioRange.class, mioRange, "MioRange")){
+			this.mioRange = mioRange;
+		} else {
+			this.mioRange = MioRange.unavailable;
+		}
+
+        int mioBearing = buffer.getInt();
+        if(checkInt(MioBearing.class, mioBearing, "MioBearing")){
+			this.mioBearing = mioBearing;
+		} else {
+			this.mioBearing = MioBearing.unavailable;
+		}
+
+        int mioRangeRate = buffer.getInt();
+        if(checkInt(MioRangeRate.class, mioRangeRate, "MioRangeRate")){
+			this.mioRangeRate = mioRangeRate;
+		} else {
+			this.mioRangeRate = MioRangeRate.unavailable;
+		}
+
+        //Lane container
+        int lane = buffer.getInt();
+        if(checkInt(Lane.class, lane, "Lane")){
+			this.lane = lane;
+		} else {
+			this.lane = Lane.unavailable;
+		}
+
+        //Pair ID container
+        this.forwardID = buffer.getInt();
+        if(!checkInt(StationID.class, forwardID, "ForwardID")){
+			throw new IllegalArgumentException();
+		}
+
+        this.backwardID = buffer.getInt();
+        if(!checkInt(StationID.class, backwardID, "BackwardID")){
+			throw new IllegalArgumentException();
+		}
+
+        //Merge container
+        this.mergeRequest = buffer.getInt();
+		if(!checkInt(MergeRequest.class, mergeRequest, "MergeRequest")){
+			throw new IllegalArgumentException();
+		}
+
+        this.mergeSafeToMerge = buffer.getInt();
+        if(!checkInt(MergeSafeToMerge.class, mergeSafeToMerge, "MergeSafeToMerge")){
+			throw new IllegalArgumentException();
+		}
+
+        this.mergeFlag = buffer.getInt();
+        if(!checkInt(MergeFlag.class, mergeFlag, "MergeFlag")){
+			throw new IllegalArgumentException();
+		}
+
+        this.mergeFlagTail = buffer.getInt();
+        if(!checkInt(MergeFlagTail.class, mergeFlagTail, "MergeFLagTail")){
+			throw new IllegalArgumentException();
+		}
+
+        this.mergeFlagHead = buffer.getInt();
+        if(!checkInt(MergeFlagHead.class, mergeFlagHead, "MergeFlagHead")){
+			throw new IllegalArgumentException();
+		}
+
+        //Intersection Container
+        this.platoonID = buffer.getInt();
+        if(!checkInt(PlatoonID.class, platoonID, "PlatoonID")){
+			throw new IllegalArgumentException();
+		}
+
+        int distanceTravelledCz = buffer.getInt();
+        if(checkInt(DistanceTravelledCZ.class, distanceTravelledCz, "DistanceTravelledCz")){
+			this.distanceTravelledCz = distanceTravelledCz;
+		} else {
+			this.distanceTravelledCz = 0;
+		}
+
+        this.intention = buffer.getInt();
+        if(!checkInt(Intention.class, intention, "Intention")){
+			throw new IllegalArgumentException();
+		}
+
+        int counter = buffer.getInt();
+        if(checkInt(Counter.class, counter, "Counter")){
+			this.counter = counter;
+		} else {
+			this.counter = 0;
+		}
     }
 
 
@@ -246,7 +343,7 @@ public class SimpleIclcm{
         messageID = (byte) header.getMessageID().value;
         stationID = (int) header.getStationID().value;
         IclmParameters iclmParameters = iclcm.getIclmParameters();
-        containerMask = 0;
+        byte containerMask = 0;
 
         if(messageID != net.gcdc.camdenm.Iclcm.MessageID_iCLCM){
             logger.warn("Malformed message on BTP port 2010 from station with ID {}", stationID);
@@ -265,7 +362,7 @@ public class SimpleIclcm{
 
         /* VehicleContainerLowFrequency */
         VehicleContainerLowFrequency lowFrequencyContainer = null;
-        lowFrequencyMask = 0;
+        byte lowFrequencyMask = 0;
         if(iclmParameters.hasLowFrequencyContainer()){
             containerMask += (1<<7);
             lowFrequencyContainer = iclmParameters.getLowFrequencyContainer();
@@ -273,18 +370,29 @@ public class SimpleIclcm{
             if(lowFrequencyContainer.hasParticipantsReady()){
                 lowFrequencyMask += (1<<7);
                 participantsReady = (int) lowFrequencyContainer.getParticipantsReady().value;
-            }
+            } else {
+				participantsReady = 0;
+			}
 
             if(lowFrequencyContainer.hasStartPlatoon()){
                 lowFrequencyMask += (1<<6);
-		startPlatoon = (int) lowFrequencyContainer.getStartPlatoon().value;
-            }
+				startPlatoon = (int) lowFrequencyContainer.getStartPlatoon().value;
+            } else {
+				startPlatoon = 0;
+			}
 
             if(lowFrequencyContainer.hasEndOfScenario()){
                 lowFrequencyMask += (1<<5);
-		endOfScenario = (int) lowFrequencyContainer.getEndOfScenario().value;
-            }
-        }
+				endOfScenario = (int) lowFrequencyContainer.getEndOfScenario().value;
+            } else {
+				endOfScenario = 0;
+			}
+        } else {
+			participantsReady = 0;
+			startPlatoon = 0;
+			endOfScenario = 0;
+		}
+		this.lowFrequencyMask = lowFrequencyMask;
 
         /* MostImportantObjectContainer */
         MostImportantObjectContainer mostImportantObjectContainer = iclmParameters.getMostImportantObjectContainer();
@@ -316,6 +424,8 @@ public class SimpleIclcm{
         distanceTravelledCz = (int) scenarioObject.getDistanceTravelledCZ().value;
         intention = (int) scenarioObject.getIntention().value;
         counter = (int) scenarioObject.getCounterIntersection().value;
+
+		this.containerMask = containerMask;
     }
 
 
