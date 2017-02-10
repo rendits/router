@@ -264,9 +264,11 @@ public class Router {
                     }
 
                     /* Print startup message */
-                    System.out.println("#### Rendits Vehicle Router ####" + "\nListening on port " + rcvSocket.getLocalPort()
-                                       + "\nVehicle Control System IP is " + vehicle_address + "\nSending incoming CAM to port "
-                                       + vehicle_cam_port + "\nSending incoming DENM to port " + vehicle_denm_port
+                    System.out.println("#### Rendits Vehicle Router ####" + "\nListening on port "
+									   + rcvSocket.getLocalPort()
+                                       + "\nVehicle Control System IP is " + vehicle_address
+									   + "\nSending incoming CAM to port " + vehicle_cam_port
+									   + "\nSending incoming DENM to port " + vehicle_denm_port
                                        + "\nSending incoming iCLCM to port " + vehicle_iclcm_port
                                        + "\nCopyright: Albin Severinson (albin@severinson.org)");
 
@@ -279,7 +281,10 @@ public class Router {
                         }
 
                         /* Log stats */
-                        logger.info("#CAM (Tx/Rx): {}/{} | #DENM (Tx/Rx): {}/{} | #iCLCM (Tx/Rx): {}/{} | #Custom (Tx/Rx): {}/{}",
+                        logger.info("#CAM (Tx/Rx): {}/{} "
+									+ "| #DENM (Tx/Rx): {}/{} "
+									+ "| #iCLCM (Tx/Rx): {}/{} "
+									+ "| #Custom (Tx/Rx): {}/{}",
                                     txCam, rxCam,
                                     txDenm, rxDenm,
                                     txIclcm, rxIclcm,
@@ -409,7 +414,10 @@ public class Router {
                 } catch(IOException e) {
                     logger.warn("Failed to send CAM to vehicle", e);
                 }
-            } catch(NullPointerException | IllegalArgumentException | UnsupportedOperationException | BufferOverflowException  e) {
+            } catch(NullPointerException
+					| IllegalArgumentException
+					| UnsupportedOperationException
+					| BufferOverflowException  e) {
                 logger.warn("Couldn't decode CAM:", e);
             }
             break;
@@ -429,7 +437,10 @@ public class Router {
                 } catch(IOException e) {
                     logger.warn("Failed to send DENM to vehicle", e);
                 }
-            } catch(NullPointerException | IllegalArgumentException | UnsupportedOperationException | BufferOverflowException e) {
+            } catch(NullPointerException
+					| IllegalArgumentException
+					| UnsupportedOperationException
+					| BufferOverflowException e) {
                 logger.warn("Couldn't decode DENM:", e);
             }
             break;
@@ -437,8 +448,8 @@ public class Router {
 
         case PORT_ICLCM: {
             try {
-                IgameCooperativeLaneChangeMessage iclcm = UperEncoder.decode(payload,
-                                                                             IgameCooperativeLaneChangeMessage.class);
+                IgameCooperativeLaneChangeMessage iclcm =
+					UperEncoder.decode(payload, IgameCooperativeLaneChangeMessage.class);
                 SimpleIclcm simpleIclcm = new SimpleIclcm(iclcm);
                 byte[] buffer = simpleIclcm.asByteArray();
                 packet.setData(buffer, 0, buffer.length);
@@ -450,7 +461,10 @@ public class Router {
                 } catch(IOException e) {
                     logger.warn("Failed to send iCLCM to vehicle", e);
                 }
-            } catch(NullPointerException | IllegalArgumentException | UnsupportedOperationException | BufferOverflowException e) {
+            } catch(NullPointerException
+					| IllegalArgumentException
+					| UnsupportedOperationException
+					| BufferOverflowException e) {
                 logger.warn("Couldn't decode iCLCM:", e);
             }
             break;
@@ -564,7 +578,8 @@ public class Router {
         }
 
         public LongPositionVector getLatestPosition() {
-            return new LongPositionVector(address, Instant.now(), position, isPositionConfident, speedMetersPerSecond,
+            return new LongPositionVector(address, Instant.now(), position,
+										  isPositionConfident, speedMetersPerSecond,
                                           headingDegreesFromNorth);
         }
     }
