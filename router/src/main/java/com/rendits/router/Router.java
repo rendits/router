@@ -191,9 +191,9 @@ public class Router {
         /* Shutdown the thread pool */
         executor.shutdown();
 
-        /* Give the threads 5 seconds before shutting down forcefully. */
+        /* Give the threads 1 second before shutting down forcefully. */
         try {
-            executor.awaitTermination(5, TimeUnit.SECONDS);
+            executor.awaitTermination(1, TimeUnit.SECONDS);
         } catch(InterruptedException e){
             logger.error("Router interrupted during shutdown:", e);
         }
