@@ -18,22 +18,12 @@ import net.gcdc.UdpDuplicator;
 public class RouterTest {
         private final int MAX_UDP_LENGTH = 256;
 
-        /*
-        public RouterTest(String testName) {
-                super(testName);
-        }
-
-
-        private void assertArrayEquals(byte[] esperado, byte[] real) {
-                assertEquals(Arrays.asList(esperado), Arrays.asList(real));
-        }
-        */
-
-        private void sendMessages(DatagramSocket socket, InetAddress routerAddress, int portRcvFromVehicle) throws IOException {
+        private void sendMessages(DatagramSocket socket, InetAddress routerAddress,
+                                  int portRcvFromVehicle) throws IOException {
                 byte[] buffer;
                 DatagramPacket packet;
                 DatagramPacket rcvPacket;
-                int messagesToSend = 1000;
+                int messagesToSend = 100;
                 SimpleCam simpleCam = SampleMessages.getSampleCam();
                 SimpleDenm simpleDenm = SampleMessages.getSampleDenm();
                 SimpleIclcm simpleIclcm = SampleMessages.getSampleIclcm();
@@ -45,6 +35,7 @@ public class RouterTest {
                         packet.setAddress(routerAddress);
                         socket.send(packet);
                         socket.receive(rcvPacket);
+                        assertArrayEquals(buffer, rcvPacket.getData());
                         assertEquals(simpleCam, new SimpleCam(rcvPacket.getData()));
 
                         buffer = simpleDenm.asByteArray();
@@ -54,6 +45,7 @@ public class RouterTest {
                         packet.setAddress(routerAddress);
                         socket.send(packet);
                         socket.receive(rcvPacket);
+                        assertArrayEquals(buffer, rcvPacket.getData());
                         assertEquals(simpleDenm, new SimpleDenm(rcvPacket.getData()));
 
                         buffer = simpleIclcm.asByteArray();
@@ -64,7 +56,7 @@ public class RouterTest {
                         socket.send(packet);
                         socket.receive(rcvPacket);
                         assertArrayEquals(buffer, rcvPacket.getData());
-                        // assertEquals(simpleIclcm, new SimpleIclcm(rcvPacket.getData()));
+                        assertEquals(simpleIclcm, new SimpleIclcm(rcvPacket.getData()));
                 }
                 return;
         }
