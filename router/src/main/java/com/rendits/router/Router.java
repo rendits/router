@@ -9,7 +9,6 @@ package com.rendits.router;
 /* Standard Java */
 import java.io.IOException;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.BufferOverflowException;
@@ -17,7 +16,6 @@ import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.SocketException;
 import java.net.InetSocketAddress;
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -26,13 +24,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Properties;
+
+/* TODO: Use a more specific exception. */
 import java.lang.IllegalArgumentException;
 
 /* ETSI GeoNetworking library */
 import net.gcdc.geonetworking.Area;
 import net.gcdc.geonetworking.BtpPacket;
 import net.gcdc.geonetworking.BtpSocket;
-import net.gcdc.geonetworking.Destination;
 import net.gcdc.geonetworking.Destination.Geobroadcast;
 import net.gcdc.geonetworking.GeonetStation;
 import net.gcdc.geonetworking.LinkLayer;
@@ -51,7 +50,8 @@ import net.gcdc.asn1.uper.UperEncoder;
 /* CAM/DENM/iCLCM message definitions */
 import net.gcdc.camdenm.CoopIts.Cam;
 import net.gcdc.camdenm.CoopIts.Denm;
-import net.gcdc.camdenm.Iclcm.*;
+import net.gcdc.camdenm.Iclcm;
+import net.gcdc.camdenm.Iclcm.IgameCooperativeLaneChangeMessage;
 import net.gcdc.camdenm.CoopIts.ItsPduHeader.MessageId;
 
 /* JSR310 time framework */
@@ -340,7 +340,7 @@ public class Router {
             break;
         }
 
-        case net.gcdc.camdenm.Iclcm.MessageID_iCLCM: {
+        case Iclcm.MessageID_iCLCM: {
             try {
                 SimpleIclcm simpleIclcm = new SimpleIclcm(buffer);
                 IgameCooperativeLaneChangeMessage iclcm = simpleIclcm.asIclcm();
@@ -376,7 +376,7 @@ public class Router {
                                                                  packet.getOffset() + packet.getLength());
 
                         // TODO: Replace with checks
-                        assert(receivedData.length == packet.getLength());
+                        assert receivedData.length == packet.getLength();
 
                         /* Parse data and send forward message */
                         properFromSimple(receivedData);

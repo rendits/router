@@ -84,7 +84,7 @@ public class SimpleCam{
         this.longitude =  longitude;
         this.semiMajorAxisConfidence = semiMajorAxisConfidence;
         this.semiMinorAxisConfidence = semiMinorAxisConfidence;
-        this.semiMajorOrientation = semiMajorAxisConfidence;
+        this.semiMajorOrientation = semiMajorOrientation;
         this.altitude = altitude;
         this.heading = heading;
         this.headingConfidence = headingConfidence;
@@ -457,11 +457,9 @@ public class SimpleCam{
             valid = false;
         }
 
-        if(this.hasLowFrequencyContainer()){
-            if(!VehicleRole.isMember(vehicleRole)){
-                logger.error("VehicleRole is not valid. Value={}", vehicleRole);
-                valid = false;
-            }
+        if(this.hasLowFrequencyContainer() && !VehicleRole.isMember(vehicleRole)) {
+			logger.error("VehicleRole is not valid. Value={}", vehicleRole);
+			valid = false;
         }
 
         return valid;

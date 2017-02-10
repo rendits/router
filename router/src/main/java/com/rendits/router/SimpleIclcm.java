@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import net.gcdc.camdenm.CoopIts.*;
 import net.gcdc.camdenm.CoopIts.ItsPduHeader.MessageId;
 import net.gcdc.camdenm.CoopIts.ItsPduHeader.ProtocolVersion;
+import net.gcdc.camdenm.Iclcm;
 import net.gcdc.camdenm.Iclcm.*;
 import net.gcdc.asn1.datatypes.IntRange;
 
@@ -105,7 +106,7 @@ public class SimpleIclcm{
                 int intention,
                 int counter) {
 
-        this.messageID = net.gcdc.camdenm.Iclcm.MessageID_iCLCM;
+        this.messageID = Iclcm.MessageID_iCLCM;
         this.stationID = stationID;
         this.containerMask = containerMask;
         //HW Container
@@ -156,9 +157,9 @@ public class SimpleIclcm{
 		   are replaced with default values if possible. */
         ByteBuffer buffer = ByteBuffer.wrap(receivedData);
         this.messageID = buffer.get();
-        if(messageID != net.gcdc.camdenm.Iclcm.MessageID_iCLCM){
+        if(messageID != Iclcm.MessageID_iCLCM){
             logger.error("MessageID is: {} Should be: {}",
-                         messageID, net.gcdc.camdenm.Iclcm.MessageID_iCLCM);
+                         messageID, Iclcm.MessageID_iCLCM);
             throw new IllegalArgumentException();
         }
 
@@ -345,7 +346,7 @@ public class SimpleIclcm{
         IclmParameters iclmParameters = iclcm.getIclmParameters();
         byte containerMask = 0;
 
-        if(messageID != net.gcdc.camdenm.Iclcm.MessageID_iCLCM){
+        if(messageID != Iclcm.MessageID_iCLCM){
             logger.warn("Malformed message on BTP port 2010 from station with ID {}", stationID);
             throw new IllegalArgumentException("Malformed message on BTP port 2010");
         }
@@ -671,7 +672,7 @@ public class SimpleIclcm{
 
 
         return new IgameCooperativeLaneChangeMessage(new ItsPduHeader(new ProtocolVersion(1),
-                                                                      new MessageId(net.gcdc.camdenm.Iclcm.MessageID_iCLCM),
+                                                                      new MessageId(Iclcm.MessageID_iCLCM),
                                                                       new StationID(stationID)),
                                                      igameCooperativeLaneChangeMessageBody);
     }
