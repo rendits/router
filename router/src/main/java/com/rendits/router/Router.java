@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.Properties;
 import java.lang.IllegalArgumentException;
 
@@ -91,11 +90,6 @@ public class Router {
     /* Thread pool for all workers handling incoming/outgoing messages */
     private static ExecutorService executor;
 
-	/* Lock preventing threads from concurrently calling
-	   DatagramSocket.receive() and BtpSocket.receive(). */
-	ReentrantLock receiveLockUDP;
-	ReentrantLock receiveLockBTP;
-
     /* True while the threads should be running */
     private static volatile boolean running;
 
@@ -157,13 +151,9 @@ public class Router {
         /* Start the BTP socket */
         btpSocket = BtpSocket.on(station);
 
-		/* Create the receive locks */
-		receiveLockUDP = new ReentrantLock();
-		receiveLockBTP = new ReentrantLock();
-
         /* Start the loops that handle sending and receiving messages */
         int numReceiveThreads = Integer.parseInt(props.getProperty("receiveThreads", "1"));
-        assert numReceiveThreads > 0;
+        assert numReceiveThreads == 1 : "Only a single receive thread is allowed for now.";
         for(int i = 0; i < numReceiveThreads; i++){
             executor.submit(receiveFromVehicle);
         }
@@ -214,14 +204,14 @@ public class Router {
     /* Statistics logging class */
     private StatsLogger statsLogger;
     private class StatsLogger {
-        private int txCam = 0;
-        private int rxCam = 0;
-        private int txDenm = 0;
-        private int rxDenm = 0;
-        private int txIclcm = 0;
-        private int rxIclcm = 0;
-        private int txCustom = 0;
-        private int rxCustom = 0;
+        private volatile int txCam = 0;
+        private volatile int rxCam = 0;
+        private volatile int txDenm = 0;
+        private volatile int rxDenm = 0;
+        private volatile int txIclcm = 0;
+        private volatile int rxIclcm = 0;
+        private volatile int txCustom = 0;
+        private volatile int rxCustom = 0;
 
         StatsLogger(ExecutorService executor) {
             executor.submit(logStats);
@@ -375,23 +365,17 @@ public class Router {
                 logger.info("Receive thread starting...");
                 while(running) {
                     try {
-						receiveLockUDP.lock();
                         rcvSocket.receive(packet);
-						//logger.info("Received...");
                         byte[] receivedData = Arrays.copyOfRange(packet.getData(), packet.getOffset(),
                                                                  packet.getOffset() + packet.getLength());
-						//logger.info("Copied...");
-						receiveLockUDP.unlock();
 
                         // TODO: Replace with checks
                         assert(receivedData.length == packet.getLength());
 
                         /* Parse data and send forward message */
                         properFromSimple(receivedData);
+
                     } catch(IOException e) {
-						if (receiveLockUDP.isHeldByCurrentThread()) {
-							receiveLockUDP.unlock();
-						}
                         logger.error("Exception when receiving message from vehicle");
 
                         /* Sleep for a short time whenever an
@@ -408,7 +392,8 @@ public class Router {
             }
         };
 
-    private void simpleFromProper(byte[] payload, int destinationPort, DatagramPacket packet){
+    private void simpleFromProper(byte[] payload, int destinationPort,
+								  DatagramPacket packet, DatagramSocket toVehicleSocket){
         switch(destinationPort) {
         case PORT_CAM: {
             try {
@@ -419,7 +404,7 @@ public class Router {
                 packet.setPort(vehicle_cam_port);
 
                 try {
-                    rcvSocket.send(packet);
+                    toVehicleSocket.send(packet);
                     statsLogger.incRxCam();
                 } catch(IOException e) {
                     logger.warn("Failed to send CAM to vehicle", e);
@@ -439,7 +424,7 @@ public class Router {
                 packet.setPort(vehicle_denm_port);
 
                 try {
-                    rcvSocket.send(packet);
+                    toVehicleSocket.send(packet);
                     statsLogger.incRxDenm();
                 } catch(IOException e) {
                     logger.warn("Failed to send DENM to vehicle", e);
@@ -460,7 +445,7 @@ public class Router {
                 packet.setPort(vehicle_iclcm_port);
 
                 try {
-                    rcvSocket.send(packet);
+                    toVehicleSocket.send(packet);
                     statsLogger.incRxIclcm();
                 } catch(IOException e) {
                     logger.warn("Failed to send iCLCM to vehicle", e);
@@ -489,17 +474,12 @@ public class Router {
                 packet.setAddress(vehicle_address);
                 try{
                     while(running) {
-						receiveLockBTP.lock();
                         BtpPacket btpPacket = btpSocket.receive();
 						byte[] payload = btpPacket.payload();
 						int destinationPort = btpPacket.destinationPort();
-						receiveLockBTP.unlock();
-                        simpleFromProper(payload, destinationPort, packet);
+                        simpleFromProper(payload, destinationPort, packet, rcvSocket);
                     }
                 } catch(InterruptedException e) {
-					if (receiveLockBTP.isHeldByCurrentThread()) {
-						receiveLockBTP.unlock();
-					}
                     logger.warn("BTP socket interrupted during receive");
                 }
                 logger.info("Send thread closing!");
