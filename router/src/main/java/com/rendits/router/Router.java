@@ -578,6 +578,7 @@ public class Router {
             return position;
         }
 
+		@Override
         public LongPositionVector getLatestPosition() {
             return new LongPositionVector(address, Instant.now(), position,
 										  isPositionConfident, speedMetersPerSecond,
