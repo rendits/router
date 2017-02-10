@@ -1,11 +1,5 @@
 package com.rendits.router;
 
-/*
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-*/
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
@@ -91,7 +85,7 @@ public class RouterTest {
                 props.setProperty("portSendDenm", "" + portSendIts);
                 props.setProperty("portSendIclcm", "" + portSendIts);
                 props.setProperty("receiveThreads", "1");
-                props.setProperty("sendThreads", "1");
+                props.setProperty("sendThreads", "3");
                 props.setProperty("vehicleAddress", vehicleAddress);
                 props.setProperty("localPortForUdpLinkLayer", "" + localPortForUdpLinkLayer);
                 props.setProperty("remoteAddressForUdpLinkLayer",
