@@ -27,7 +27,7 @@ import net.gcdc.asn1.datatypes.IntRange;
 
 public class SimpleCam{
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
-    private final int SIMPLE_CAM_LENGTH = 82;
+    private final static int SIMPLE_CAM_LENGTH = 82;
 
     final byte messageID;
     final int stationID;
@@ -367,6 +367,12 @@ public class SimpleCam{
     public int getGenerationDeltaTime(){
         return this.genDeltaTimeMillis;
     }
+
+    @Override
+	public int hashCode() {
+		assert false : "hashCode not designed";
+		return 42; // any arbitrary constant will do
+	}
 
     @Override
     public boolean equals(Object o) {

@@ -25,7 +25,8 @@ import net.gcdc.asn1.datatypes.IntRange;
 
 public class SimpleDenm{
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
-    private final int SIMPLE_DENM_LENGTH = 101;
+    private final static int SIMPLE_DENM_LENGTH = 101;
+
     /* TODO: Is this the right way to keep sequence numbers? */
     private static int denmSequenceNumber = 0;
 
@@ -491,6 +492,12 @@ public class SimpleDenm{
             return false;
         }else return true;
     }
+
+    @Override
+	public int hashCode() {
+		assert false : "hashCode not designed";
+		return 42; // any arbitrary constant will do
+	}
 
     @Override
     public boolean equals(Object o) {

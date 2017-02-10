@@ -27,7 +27,7 @@ import net.gcdc.asn1.datatypes.IntRange;
 
 public class SimpleIclcm{
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
-    private final int SIMPLE_iCLCM_LENGTH = 111;
+    private final static int SIMPLE_iCLCM_LENGTH = 111;
 
     final byte messageID;
     final int stationID;
@@ -471,6 +471,13 @@ public class SimpleIclcm{
         }else return true;
     }
 
+    @Override
+	public int hashCode() {
+		assert false : "hashCode not designed";
+		return 42; // any arbitrary constant will do
+	}
+
+	@Override
     public boolean equals(Object o) {
             // self check
             if (this == o) {

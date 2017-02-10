@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Properties;
 import java.lang.IllegalArgumentException;
 
@@ -67,7 +68,7 @@ public class Router {
 
     /* Incoming UDP messages */
     private final DatagramSocket rcvSocket;
-    public final static int MAX_UDP_LENGTH = 600;
+    private final static int MAX_UDP_LENGTH = 600;
 
     /* Incoming/outgoing BTP messages */
     private final BtpSocket btpSocket;
@@ -82,16 +83,21 @@ public class Router {
     private final static double iCLCM_LIFETIME_SECONDS = 0.9;
 
     /* Default ports */
-    public static int vehicle_cam_port = 5000;
-    public static int vehicle_denm_port = 5000;
-    public static int vehicle_iclcm_port = 5000;
-    public static InetAddress vehicle_address;
+    private int vehicle_cam_port = 5000;
+    private int vehicle_denm_port = 5000;
+    private int vehicle_iclcm_port = 5000;
+    private InetAddress vehicle_address;
 
     /* Thread pool for all workers handling incoming/outgoing messages */
-    private static ExecutorService executor;
+    private ExecutorService executor;
+
+    /* For keeping track of the current vehicle position. Used for the
+     * broadcasting service and for generating Geonetworking addresses.
+     */
+    private VehiclePositionProvider vehiclePositionProvider;
 
     /* True while the threads should be running */
-    private static volatile boolean running;
+    private volatile boolean running;
 
     public Router(Properties props) throws IOException {
 
@@ -196,57 +202,52 @@ public class Router {
         logger.info("Router closed");
     }
 
-    /* For keeping track of the current vehicle position. Used for the
-     * broadcasting service and for generating Geonetworking addresses.
-     */
-    public static VehiclePositionProvider vehiclePositionProvider;
-
     /* Statistics logging class */
     private StatsLogger statsLogger;
     private class StatsLogger {
-        private volatile int txCam = 0;
-        private volatile int rxCam = 0;
-        private volatile int txDenm = 0;
-        private volatile int rxDenm = 0;
-        private volatile int txIclcm = 0;
-        private volatile int rxIclcm = 0;
-        private volatile int txCustom = 0;
-        private volatile int rxCustom = 0;
+        private AtomicInteger txCam = new AtomicInteger();
+        private AtomicInteger rxCam = new AtomicInteger();
+        private AtomicInteger txDenm = new AtomicInteger();
+        private AtomicInteger rxDenm = new AtomicInteger();
+        private AtomicInteger txIclcm = new AtomicInteger();
+        private AtomicInteger rxIclcm = new AtomicInteger();
+        private AtomicInteger txCustom = new AtomicInteger();
+        private AtomicInteger rxCustom = new AtomicInteger();
 
         StatsLogger(ExecutorService executor) {
             executor.submit(logStats);
         }
 
         public void incTxCam(){
-            this.txCam++;
+            this.txCam.incrementAndGet();
         }
 
         public void incRxCam(){
-            this.rxCam++;
+            this.rxCam.incrementAndGet();
         }
 
         public void incTxDenm(){
-            this.txDenm++;
+            this.txDenm.incrementAndGet();
         }
 
         public void incRxDenm(){
-            this.rxDenm++;
+            this.rxDenm.incrementAndGet();
         }
 
         public void incTxIclcm(){
-            this.txIclcm++;
+            this.txIclcm.incrementAndGet();
         }
 
         public void incRxIclcm(){
-            this.rxIclcm++;
+            this.rxIclcm.incrementAndGet();
         }
 
         public void incTxCustom(){
-            this.txCustom++;
+            this.txCustom.incrementAndGet();
         }
 
         public void incRxCustom(){
-            this.rxCustom++;
+            this.rxCustom.incrementAndGet();
         }
 
         /* Dedicated thread for periodically logging statistics */
@@ -647,7 +648,8 @@ public class Router {
                 while(true) {
                     try{
                         Socket clientSocket = configSocket.accept();
-                        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                        BufferedReader in = new BufferedReader(
+							new InputStreamReader(clientSocket.getInputStream(), "UTF-8"));
 
 
 
