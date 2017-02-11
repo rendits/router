@@ -1,8 +1,18 @@
-/* Copyright 2016 Albin Severinson
- * Rendits vehicle router
- * Broadcasts incoming messages
- * Forwards incoming GeoNetworking messages to all subscribers.
- */
+///////////////////////////////////////////////////////////////////////////////
+// Copyright 2016 Albin Severinson                                           //
+//                                                                           //
+// Licensed under the Apache License, Version 2.0 (the "License");           //
+// you may not use this file except in compliance with the License.          //
+// You may obtain a copy of the License at                                   //
+//                                                                           //
+//     http://www.apache.org/licenses/LICENSE-2.0                            //
+//                                                                           //
+// Unless required by applicable law or agreed to in writing, software       //
+// distributed under the License is distributed on an "AS IS" BASIS,         //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  //
+// See the License for the specific language governing permissions and       //
+// limitations under the License.                                            //
+///////////////////////////////////////////////////////////////////////////////
 
 package com.rendits.router;
 
@@ -61,6 +71,18 @@ import org.threeten.bp.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <h1>Rendits vehicle router</h1>
+ * This class is built to work as an ITS-G5 V2X gateway. Specifically
+ * this class will do two things: Receive incoming V2X messages from
+ * other vehicles, decode the received message and forward it to the
+ * local control system. It will also listen for messages from the
+ * local control system and forward those encoded according to the
+ * ITS-G5 specification.
+ *
+ * @author Albin Severinson (albin@rendits.com)
+ * @version 1.0.0-SNAPSHOT
+ */
 public class Router {
     private final static Logger logger = LoggerFactory.getLogger(Router.class);
     private final Thread stationThread;
@@ -99,6 +121,15 @@ public class Router {
     /* True while the threads should be running */
     private volatile boolean running;
 
+	/**
+	 * Router constructor. This method will initialize the
+	 * GeoNetworking stack and set up everything such that it is ready
+	 * to accept messages.
+	 * @param props A Java Properties object. See the example config
+	 * file router.properties for the required properties.
+	 * @exception IOException on error setting up the sockets or on
+	 * missing required parameters.
+	 */
     public Router(Properties props) throws IOException {
 
         /* Set running status to true */
@@ -174,7 +205,10 @@ public class Router {
         statsLogger = new StatsLogger(executor);
     }
 
-    /* Stop the router */
+    /**
+	 * Stop the GeoNetworking stack and the router. The program will
+	 * shut down after calling this if nothing else is running.
+	 */
     public void close() {
 
         /* Notify all threads to stop running */
@@ -202,7 +236,12 @@ public class Router {
         logger.info("Router closed");
     }
 
-    /* Statistics logging class */
+    /**
+	 * This class is used to keep track of statistics. It maintains
+	 * counts of the how many messages have passed of each kind and
+	 * provides methods to increment the counts. The statistics are
+	 * written to log periodically.
+	 */
     private StatsLogger statsLogger;
     private class StatsLogger {
         private AtomicInteger txCam = new AtomicInteger();
@@ -214,43 +253,74 @@ public class Router {
         private AtomicInteger txCustom = new AtomicInteger();
         private AtomicInteger rxCustom = new AtomicInteger();
 
+		/**
+		 * StatsLogger constructor.
+		 * @param executor Executor service the thread writing
+		 * stats to log will be added to.
+		 */
         StatsLogger(ExecutorService executor) {
             executor.submit(logStats);
         }
 
+		/**
+		 * Increment the count of transmitted CAM messages.
+		 */
         public void incTxCam(){
             this.txCam.incrementAndGet();
         }
 
+		/**
+		 * Increment the count of received CAM messages.
+		 */
         public void incRxCam(){
             this.rxCam.incrementAndGet();
         }
 
+		/**
+		 * Increment the count of transmitted DENM messages.
+		 */
         public void incTxDenm(){
             this.txDenm.incrementAndGet();
         }
 
+		/**
+		 * Increment the count of received DENM messages.
+		 */
         public void incRxDenm(){
             this.rxDenm.incrementAndGet();
         }
 
+		/**
+		 * Increment the count of transmitted ICLCM messages.
+		 */
         public void incTxIclcm(){
             this.txIclcm.incrementAndGet();
         }
 
+		/**
+		 * Increment the count of received ICLCM messages.
+		 */
         public void incRxIclcm(){
             this.rxIclcm.incrementAndGet();
         }
 
+		/**
+		 * Increment the count of transmitted custom messages.
+		 */
         public void incTxCustom(){
             this.txCustom.incrementAndGet();
         }
 
+		/**
+		 * Increment the count of received custom messages.
+		 */
         public void incRxCustom(){
             this.rxCustom.incrementAndGet();
         }
 
-        /* Dedicated thread for periodically logging statistics */
+        /**
+		 * Dedicated thread for periodically logging statistics.
+		 */
         private Runnable logStats = new Runnable() {
                 @Override
                 public void run() {
@@ -271,7 +341,7 @@ public class Router {
 									   + "\nSending incoming CAM to port " + vehicle_cam_port
 									   + "\nSending incoming DENM to port " + vehicle_denm_port
                                        + "\nSending incoming iCLCM to port " + vehicle_iclcm_port
-                                       + "\nCopyright: Albin Severinson (albin@severinson.org)");
+                                       + "\nCopyright: Albin Severinson (albin@rendits.com)");
 
                     /* Log statistics every second */
                     while(running) {
@@ -295,9 +365,14 @@ public class Router {
              };
     }
 
-    /* Parse and forward a simple simple message.
+    /**
+	 * Parse the byte[] representation of a simple message into a
+	 * proper ITS-G5 message and transmit it.
+	 * @param buffer byte[] representation of a simple message.
      */
     private void properFromSimple(byte[] buffer) {
+		/* TODO: Add custom messages. */
+
         switch(buffer[0]){
         case MessageId.cam: {
             try{
@@ -358,7 +433,8 @@ public class Router {
         }
     }
 
-    /* Receive simple messages from the control system, parse them into
+    /**
+	 * Receive simple messages from the control system, parse them into
      * the proper message (CAM/DENM/iCLCM/custom) and forward to the
      * link layer.
      */
@@ -398,6 +474,19 @@ public class Router {
             }
         };
 
+    /**
+	 * Parse a proper ITS-G5 message into its simple message
+	 * representation. The simple message is forwarded to the local
+	 * control system.
+	 * @param payload The payload of a received BTP message. The
+	 * payload should be an ASN.1 encoded CAM/DENM/iCLCM message or a
+	 * custom message.
+	 * @param destinationPort Port to send the simple message to.
+	 * @param packet The packet to use when sending the simple
+	 * message.
+	 * @param toVehicleSocket The socket to use when sending the
+	 * simple message,
+     */
     private void simpleFromProper(byte[] payload, int destinationPort,
 								  DatagramPacket packet, DatagramSocket toVehicleSocket){
         switch(destinationPort) {
@@ -476,8 +565,9 @@ public class Router {
         }
     }
 
-    /* Receive incoming CAM/DENM/iCLCM, parse them and foward to
-     * vehicle.
+    /**
+	 * Receive incoming proper CAM/DENM/iCLCM, parse them into simple
+     * messages and forward them to the local control system.
      */
     private Runnable sendToVehicle = new Runnable() {
             private final byte[] buffer = new byte[MAX_UDP_LENGTH];
@@ -501,7 +591,10 @@ public class Router {
             }
         };
 
-    /* Send CAM/DENM/iCLCM. */
+    /**
+	 * Broadcast a proper CAM message.
+	 * @param cam A proper CAM message.
+	 */
     public void send(Cam cam) {
         byte[] bytes;
         try {
@@ -518,6 +611,12 @@ public class Router {
         }
     }
 
+    /**
+	 * Broadcast a proper DENM message to the specified GeoBroadcast
+	 * destination.
+	 * @param denm A proper DENM message.
+	 * @param destination The geographical destination of the message.
+	 */
     private void send(Denm denm, Geobroadcast destination) {
         byte[] bytes;
         try {
@@ -534,6 +633,10 @@ public class Router {
         }
     }
 
+    /**
+	 * Broadcast a proper iCLCM message.
+	 * @param iclcm A proper iCLCM message.
+	 */
     private void send(IgameCooperativeLaneChangeMessage iclcm) {
         byte[] bytes;
         try {
@@ -551,8 +654,11 @@ public class Router {
     }
 
 
-    /* PositionProvider is used by the beaconing service and for creating the
-     * Geobroadcast address used for DENM messages.
+    /**
+	 * This class is used to provide the current position of the
+	 * vehicle. The position is used by the beaconing service, to
+	 * generate GeoBroadcast addresses and to check if a received DENM
+	 * message is addressed to us.
      */
     public static class VehiclePositionProvider implements PositionProvider {
         public Address address;
@@ -561,6 +667,10 @@ public class Router {
         public double speedMetersPerSecond;
         public double headingDegreesFromNorth;
 
+		/**
+		 * VehiclePositionProvider constructor.
+		 * @param address The vehicle address.
+		 */
         VehiclePositionProvider(Address address) {
             this.address = address;
             this.position = new Position(0, 0);
@@ -569,15 +679,29 @@ public class Router {
             this.headingDegreesFromNorth = 0;
         }
 
+		/**
+		 * Update the stored vehicle position.
+		 * @param latitude The current latitude of the vehicle.
+		 * @param longitude The current longitude of the vehicle.
+		 */
         public void update(double latitude, double longitude) {
+			/* TODO: Set speed, heading and confidence as well. */
             this.position = new Position(latitude, longitude);
-            logger.debug("VehiclePositionProvider position updated: {}", this.position);
         }
 
+		/**
+		 * Return the latest position of the vehicle.
+		 * @return The latest position of the vehicle.
+		 */
         public Position getPosition() {
             return position;
         }
 
+		/**
+		 * Get the latest position of the vehicle as a
+		 * LongPositionVector.
+		 * @return The latest position of the vehicle.
+		 */
 		@Override
         public LongPositionVector getLatestPosition() {
             return new LongPositionVector(address, Instant.now(), position,
@@ -586,10 +710,16 @@ public class Router {
         }
     }
 
-    /* Create a socket address from a string */
+    /**
+	 * This class is used to create a socket address from a string
+	 */
     private static class SocketAddressFromString {
         private final InetSocketAddress address;
 
+		/**
+		 * SocketAddressFromString constructor.
+		 * @param addressStr String formatted as host:port
+		 */
         public SocketAddressFromString(final String addressStr) {
             String[] hostAndPort = addressStr.split(":");
             if (hostAndPort.length != 2) {
@@ -600,20 +730,31 @@ public class Router {
             this.address = new InetSocketAddress(hostname, port);
         }
 
+		/**
+		 * Get the address as an InetSocketAddress.
+		 * @return InetSocketAddress address.
+		 */
         public InetSocketAddress asInetSocketAddress() {
             return address;
         }
     }
 
-    /* Class dedicated to running the router and listening to
-     * configuration changes over the network. Whenever a config
-     * change is received, the router is restarted with the new
+    /**
+	 * This class is used for running the router and listening to
+     * configuration changes over the network. Whenever a new set of
+     * properties is received, the router is restarted with the new
      * properties.
      */
     private static class RouterRunner implements Runnable {
         Properties props;
         ServerSocket configSocket;
 
+		/**
+		 * RouterRunner constructor.
+		 * @param props Default properties.
+		 * @exception IOException Thrown on problem setting up sockets
+		 * or on missing required parameters.
+		 */
         RouterRunner(Properties props) throws IOException {
             this.props = props;
 
@@ -624,6 +765,11 @@ public class Router {
             configSocket = new ServerSocket(configPort);
         }
 
+		/**
+		 * Start the router abd wait for a config change to arrive.
+		 * When one does the router is restarted with the new
+		 * properties.
+		 */
         @Override
         public void run() {
             while(true) {
@@ -680,8 +826,12 @@ public class Router {
         }
     }
 
-    // TODO: Allow loading custom config via cli
+	/**
+	 * The main method will start the router with the provided
+	 * properties.
+	 */
     public static void main( String[] args) throws IOException {
+		/* TODO: Allow loading custom config via cli */
 
         /* Load properties from file */
         Properties props = new Properties();
