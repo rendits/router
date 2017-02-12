@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.BufferOverflowException;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -57,6 +56,7 @@ import net.gcdc.geonetworking.StationConfig;
 import net.gcdc.geonetworking.StationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threeten.bp.Instant;
 
 
 /**
@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
  *
  * <h1>Rendits vehicle router</h1>
  *
- * This class is built to work as an ITS-G5 V2X gateway. Specifically this class will do two things:
+ * <p>This class is built to work as an ITS-G5 V2X gateway. Specifically this class will do two things:
  * Receive incoming V2X messages from other vehicles, decode the received message and forward it to
  * the local control system. It will also listen for messages from the local control system and
  * forward those encoded according to the ITS-G5 specification.
@@ -126,32 +126,19 @@ public class Router {
     /* Start the thread pool */
     executor = Executors.newCachedThreadPool();
 
-    /* Create a new config */
-    StationConfig config = new StationConfig();
-
-    /* Configure the link layer */
-    int localPortForUdpLinkLayer = Integer.parseInt(props.getProperty("localPortForUdpLinkLayer"));
-    InetSocketAddress remoteAddressForUdpLinkLayer =
-        new SocketAddressFromString(props.getProperty("remoteAddressForUdpLinkLayer"))
-            .asInetSocketAddress();
-    LinkLayer linkLayer =
-        new LinkLayerUdpToEthernet(localPortForUdpLinkLayer, remoteAddressForUdpLinkLayer, true);
-
     /* Configure vehicle address */
-    String vehicleAddress = props.getProperty("vehicleAddress");
-    vehicleAddress = InetAddress.getByName(vehicleAddress);
+    String vehicleAddressString = props.getProperty("vehicleAddress");
+    vehicleAddress = InetAddress.getByName(vehicleAddressString);
 
     /* Router mac address */
     MacAddress senderMac = new MacAddress(props.getProperty("macAddress"));
 
     /* Configure router address */
     int countryCode = Integer.parseInt(props.getProperty("countryCode"));
-    Address address =
-        new Address(
-            true, // isManual,
-            StationType.values()[5], // 5 for passenger car
-            countryCode,
-            senderMac.value());
+    Address address = new Address(true, // isManual,
+                                  StationType.values()[5], // 5 for passenger car
+                                  countryCode,
+                                  senderMac.value());
 
     /* Create a vehicle position provider */
     vehiclePositionProvider = new VehiclePositionProvider(address);
@@ -163,6 +150,17 @@ public class Router {
 
     /* Open the receive socket */
     int portRcvFromVehicle = Integer.parseInt(props.getProperty("portRcvFromVehicle"));
+
+    /* Create a new config */
+    StationConfig config = new StationConfig();
+
+    /* Configure the link layer */
+    int localPortForUdpLinkLayer = Integer.parseInt(props.getProperty("localPortForUdpLinkLayer"));
+    InetSocketAddress remoteAddressForUdpLinkLayer =
+        new SocketAddressFromString(props.getProperty("remoteAddressForUdpLinkLayer"))
+        .asInetSocketAddress();
+    LinkLayer linkLayer =
+        new LinkLayerUdpToEthernet(localPortForUdpLinkLayer, remoteAddressForUdpLinkLayer, true);
 
     /* Start the GeoNet station */
     rcvSocket = new DatagramSocket(portRcvFromVehicle);
@@ -310,17 +308,17 @@ public class Router {
             /* Print startup message */
             System.out.println(
                 "#### Rendits Vehicle Router ####"
-                    + "\nListening on port "
-                    + rcvSocket.getLocalPort()
-                    + "\nVehicle Control System IP is "
-                    + vehicleAddress
-                    + "\nSending incoming CAM to port "
-                    + vehicleCamPort
-                    + "\nSending incoming DENM to port "
-                    + vehicleDenmPort
-                    + "\nSending incoming iCLCM to port "
-                    + vehicleIclcmPort
-                    + "\nCopyright: Albin Severinson (albin@rendits.com)");
+                + "\nListening on port "
+                + rcvSocket.getLocalPort()
+                + "\nVehicle Control System IP is "
+                + vehicleAddress
+                + "\nSending incoming CAM to port "
+                + vehicleCamPort
+                + "\nSending incoming DENM to port "
+                + vehicleDenmPort
+                + "\nSending incoming iCLCM to port "
+                + vehicleIclcmPort
+                + "\nCopyright: Albin Severinson (albin@rendits.com)");
 
             /* Log statistics every second */
             while (running) {
@@ -333,9 +331,9 @@ public class Router {
               /* Log stats */
               logger.info(
                   "#CAM (Tx/Rx): {}/{} "
-                      + "| #DENM (Tx/Rx): {}/{} "
-                      + "| #iCLCM (Tx/Rx): {}/{} "
-                      + "| #Custom (Tx/Rx): {}/{}",
+                  + "| #DENM (Tx/Rx): {}/{} "
+                  + "| #iCLCM (Tx/Rx): {}/{} "
+                  + "| #Custom (Tx/Rx): {}/{}",
                   txCam,
                   rxCam,
                   txDenm,
@@ -359,62 +357,59 @@ public class Router {
     /* TODO: Add custom messages. */
 
     switch (buffer[0]) {
-      case MessageId.cam:
-        {
-          try {
-            SimpleCam simpleCam = new SimpleCam(buffer);
-            Cam cam = simpleCam.asCam();
-            send(cam);
-            statsLogger.incTxCam();
+      case MessageId.cam: {
+        try {
+          SimpleCam simpleCam = new SimpleCam(buffer);
+          Cam cam = simpleCam.asCam();
+          send(cam);
+          statsLogger.incTxCam();
 
-            /* Use the data in the CAM to update the locally
-             * stored vehicle position. Used when receiving
-             * messages and generating adresses.
-             */
-            double latitude = (double) simpleCam.getLatitude();
-            latitude /= 1e7;
+          /* Use the data in the CAM to update the locally
+           * stored vehicle position. Used when receiving
+           * messages and generating adresses.
+           */
+          double latitude = (double) simpleCam.getLatitude();
+          latitude /= 1e7;
 
-            double longitude = (double) simpleCam.getLongitude();
-            longitude /= 1e7;
+          double longitude = (double) simpleCam.getLongitude();
+          longitude /= 1e7;
 
-            vehiclePositionProvider.update(latitude, longitude);
-          } catch (IllegalArgumentException e) {
-            logger.error("Irrecoverable error when creating CAM. Ignoring message.", e);
-          }
-          break;
+          vehiclePositionProvider.update(latitude, longitude);
+        } catch (IllegalArgumentException e) {
+          logger.error("Irrecoverable error when creating CAM. Ignoring message.", e);
         }
+        break;
+      }
 
-      case MessageId.denm:
-        {
-          try {
-            SimpleDenm simpleDenm = new SimpleDenm(buffer);
-            Denm denm = simpleDenm.asDenm();
+      case MessageId.denm: {
+        try {
+          SimpleDenm simpleDenm = new SimpleDenm(buffer);
+          Denm denm = simpleDenm.asDenm();
 
-            /* Simple messages are sent to everyone within range. */
-            Position position = vehiclePositionProvider.getPosition();
-            Area target = Area.circle(position, Double.MAX_VALUE);
-            send(denm, Geobroadcast.geobroadcast(target));
-            statsLogger.incTxDenm();
+          /* Simple messages are sent to everyone within range. */
+          Position position = vehiclePositionProvider.getPosition();
+          Area target = Area.circle(position, Double.MAX_VALUE);
+          send(denm, Geobroadcast.geobroadcast(target));
+          statsLogger.incTxDenm();
 
-          } catch (IllegalArgumentException e) {
-            logger.error("Irrecoverable error when creating DENM. Ignoring message.", e);
-          }
-          break;
+        } catch (IllegalArgumentException e) {
+          logger.error("Irrecoverable error when creating DENM. Ignoring message.", e);
         }
+        break;
+      }
 
-      case Iclcm.MessageID_iCLCM:
-        {
-          try {
-            SimpleIclcm simpleIclcm = new SimpleIclcm(buffer);
-            IgameCooperativeLaneChangeMessage iclcm = simpleIclcm.asIclcm();
-            send(iclcm);
-            statsLogger.incTxIclcm();
+      case Iclcm.MessageID_iCLCM: {
+        try {
+          SimpleIclcm simpleIclcm = new SimpleIclcm(buffer);
+          IgameCooperativeLaneChangeMessage iclcm = simpleIclcm.asIclcm();
+          send(iclcm);
+          statsLogger.incTxIclcm();
 
-          } catch (IllegalArgumentException e) {
-            logger.error("Irrecoverable error when creating iCLCM. Ignoring message.", e);
-          }
-          break;
+        } catch (IllegalArgumentException e) {
+          logger.error("Irrecoverable error when creating iCLCM. Ignoring message.", e);
         }
+        break;
+      }
 
       default:
         logger.warn("Received incorrectly formatted message. First byte: {}", buffer[0]);
@@ -478,78 +473,75 @@ public class Router {
   private void simpleFromProper(
       byte[] payload, int destinationPort, DatagramPacket packet, DatagramSocket toVehicleSocket) {
     switch (destinationPort) {
-      case PORT_CAM:
-        {
+      case PORT_CAM: {
+        try {
+          Cam cam = UperEncoder.decode(payload, Cam.class);
+          SimpleCam simpleCam = new SimpleCam(cam);
+          byte[] buffer = simpleCam.asByteArray();
+          packet.setData(buffer, 0, buffer.length);
+          packet.setPort(vehicleCamPort);
+
           try {
-            Cam cam = UperEncoder.decode(payload, Cam.class);
-            SimpleCam simpleCam = new SimpleCam(cam);
-            byte[] buffer = simpleCam.asByteArray();
-            packet.setData(buffer, 0, buffer.length);
-            packet.setPort(vehicleCamPort);
-
-            try {
-              toVehicleSocket.send(packet);
-              statsLogger.incRxCam();
-            } catch (IOException e) {
-              logger.warn("Failed to send CAM to vehicle", e);
-            }
-          } catch (NullPointerException
-              | IllegalArgumentException
-              | UnsupportedOperationException
-              | BufferOverflowException e) {
-            logger.warn("Couldn't decode CAM:", e);
+            toVehicleSocket.send(packet);
+            statsLogger.incRxCam();
+          } catch (IOException e) {
+            logger.warn("Failed to send CAM to vehicle", e);
           }
-          break;
+        } catch (NullPointerException
+                 | IllegalArgumentException
+                 | UnsupportedOperationException
+                 | BufferOverflowException e) {
+          logger.warn("Couldn't decode CAM:", e);
         }
+        break;
+      }
 
-      case PORT_DENM:
-        {
+      case PORT_DENM: {
+        try {
+          Denm denm = UperEncoder.decode(payload, Denm.class);
+          SimpleDenm simpleDenm = new SimpleDenm(denm);
+          byte[] buffer = simpleDenm.asByteArray();
+          packet.setData(buffer, 0, buffer.length);
+          packet.setPort(vehicleDenmPort);
+
           try {
-            Denm denm = UperEncoder.decode(payload, Denm.class);
-            SimpleDenm simpleDenm = new SimpleDenm(denm);
-            byte[] buffer = simpleDenm.asByteArray();
-            packet.setData(buffer, 0, buffer.length);
-            packet.setPort(vehicleDenmPort);
-
-            try {
-              toVehicleSocket.send(packet);
-              statsLogger.incRxDenm();
-            } catch (IOException e) {
-              logger.warn("Failed to send DENM to vehicle", e);
-            }
-          } catch (NullPointerException
-              | IllegalArgumentException
-              | UnsupportedOperationException
-              | BufferOverflowException e) {
-            logger.warn("Couldn't decode DENM:", e);
+            toVehicleSocket.send(packet);
+            statsLogger.incRxDenm();
+          } catch (IOException e) {
+            logger.warn("Failed to send DENM to vehicle", e);
           }
-          break;
+        } catch (NullPointerException
+                 | IllegalArgumentException
+                 | UnsupportedOperationException
+                 | BufferOverflowException e) {
+          logger.warn("Couldn't decode DENM:", e);
         }
+        break;
+      }
 
-      case PORT_ICLCM:
-        {
+      case PORT_ICLCM: {
+        try {
+          IgameCooperativeLaneChangeMessage iclcm =
+              UperEncoder.decode(payload, IgameCooperativeLaneChangeMessage.class);
+          SimpleIclcm simpleIclcm = new SimpleIclcm(iclcm);
+          byte[] buffer = simpleIclcm.asByteArray();
+          packet.setData(buffer, 0, buffer.length);
+          packet.setPort(vehicleIclcmPort);
+
           try {
-            IgameCooperativeLaneChangeMessage iclcm =
-                UperEncoder.decode(payload, IgameCooperativeLaneChangeMessage.class);
-            SimpleIclcm simpleIclcm = new SimpleIclcm(iclcm);
-            byte[] buffer = simpleIclcm.asByteArray();
-            packet.setData(buffer, 0, buffer.length);
-            packet.setPort(vehicleIclcmPort);
-
-            try {
-              toVehicleSocket.send(packet);
-              statsLogger.incRxIclcm();
-            } catch (IOException e) {
-              logger.warn("Failed to send iCLCM to vehicle", e);
-            }
-          } catch (NullPointerException
-              | IllegalArgumentException
-              | UnsupportedOperationException
-              | BufferOverflowException e) {
-            logger.warn("Couldn't decode iCLCM:", e);
+            toVehicleSocket.send(packet);
+            statsLogger.incRxIclcm();
+          } catch (IOException e) {
+            logger.warn("Failed to send iCLCM to vehicle", e);
           }
-          break;
+        } catch (NullPointerException
+                 | IllegalArgumentException
+                 | UnsupportedOperationException
+                 | BufferOverflowException e) {
+          logger.warn("Couldn't decode iCLCM:", e);
         }
+        break;
+      }
 
       default:
         // fallthrough
@@ -709,7 +701,7 @@ public class Router {
     }
   }
 
-  /** This class is used to create a socket address from a string */
+  /** This class is used to create a socket address from a string. */
   private static class SocketAddressFromString {
     private final InetSocketAddress address;
 
@@ -833,9 +825,9 @@ public class Router {
     in.close();
 
     /* Time to get the ball rolling! */
-    RouterRunner r = new RouterRunner(props);
-    Thread t = new Thread(r);
-    t.start();
+    RouterRunner routerRunner = new RouterRunner(props);
+    Thread runnerThread = new Thread(routerRunner);
+    runnerThread.start();
   }
 }
 /* That's all folks! */
