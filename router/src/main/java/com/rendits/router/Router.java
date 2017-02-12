@@ -722,11 +722,15 @@ public class Router {
 
   /** The main method will start the router with the provided properties. */
   public static void main(String[] args) throws IOException {
-    /* TODO: Allow loading custom config via cli */
 
     /* Load properties from file */
     Properties props = new Properties();
-    FileInputStream in = new FileInputStream("router.properties");
+    FileInputStream in;
+    if (args.length > 0) {
+      in = new FileInputStream(args[0]);
+    } else {
+      in = new FileInputStream("router.properties");
+    }
     props.load(in);
     in.close();
 
