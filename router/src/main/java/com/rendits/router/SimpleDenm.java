@@ -16,6 +16,7 @@
 package com.rendits.router;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.gcdc.asn1.datatypes.IntRange;
 import net.gcdc.camdenm.CoopIts.*;
 import net.gcdc.camdenm.CoopIts.ItsPduHeader.MessageId;
@@ -38,8 +39,9 @@ public class SimpleDenm {
   private static final Logger logger = LoggerFactory.getLogger(Router.class);
   private static final int SIMPLE_DENM_LENGTH = 101;
 
-  /* TODO: Is this the right way to keep sequence numbers? */
-  private static int denmSequenceNumber = 0;
+  /* The sequence number of the DENM */
+  private static AtomicInteger denmSequenceCounter = new AtomicInteger();
+  private final int denmSequenceNumber;
 
   final byte messageId;
   final int stationId;
@@ -102,6 +104,7 @@ public class SimpleDenm {
       int temperature,
       int positioningSolutionType) {
 
+    this.denmSequenceNumber = denmSequenceCounter.getAndIncrement();
     this.messageId = MessageId.denm;
     this.stationId = stationId;
     this.generationDeltaTime = generationDeltaTime;
@@ -147,6 +150,8 @@ public class SimpleDenm {
           SIMPLE_DENM_LENGTH);
       throw new IllegalArgumentException();
     }
+
+    this.denmSequenceNumber = denmSequenceCounter.getAndIncrement();
 
     /* Assign values, checking if they are valid. Invalid values
     are replaced with default values if possible. */
@@ -347,7 +352,7 @@ public class SimpleDenm {
     /* ManagementContainer */
     byte managementMask = 0;
 
-    //buffer.putInt((int) managementContainer.getActionID().getOriginatingStationID().value);
+    denmSequenceNumber = (int) managementContainer.getActionID().getSequenceNumber().value;
     detectionTime = (int) managementContainer.getDetectionTime().value / 65536;
     referenceTime = (int) managementContainer.getReferenceTime().value / 65536;
 
@@ -758,7 +763,7 @@ public class SimpleDenm {
         ManagementContainer.builder()
             .actionID(
                 new ActionID(
-                    new StationID(stationId), new SequenceNumber(denmSequenceNumber++ % 65535)))
+                    new StationID(stationId), new SequenceNumber(denmSequenceNumber % 65535)))
 
             /* Referencetime is sent in increments of 65536ms. So to
              * get the current time we need to multiply with that and
