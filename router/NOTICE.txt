@@ -1,0 +1,4 @@
+Rendits Vehicle-to-Anything Router
+Copyright 2016 Albin Severinson
+
+This product includes software developed by Alexey Voronov.
