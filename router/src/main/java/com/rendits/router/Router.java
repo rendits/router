@@ -28,7 +28,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.BufferOverflowException;
-import java.time.Instant
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -94,10 +94,10 @@ public class Router {
   private static final double iCLCM_LIFETIME_SECONDS = 0.9;
 
   /* Default ports */
-  private int vehicle_cam_port = 5000;
-  private int vehicle_denm_port = 5000;
-  private int vehicle_iclcm_port = 5000;
-  private InetAddress vehicle_address;
+  private int vehicleCamPort = 5000;
+  private int vehicleDenmPort = 5000;
+  private int vehicleIclcmPort = 5000;
+  private InetAddress vehicleAddress;
 
   /* Thread pool for all workers handling incoming/outgoing messages */
   private ExecutorService executor;
@@ -139,7 +139,7 @@ public class Router {
 
     /* Configure vehicle address */
     String vehicleAddress = props.getProperty("vehicleAddress");
-    vehicle_address = InetAddress.getByName(vehicleAddress);
+    vehicleAddress = InetAddress.getByName(vehicleAddress);
 
     /* Router mac address */
     MacAddress senderMac = new MacAddress(props.getProperty("macAddress"));
@@ -157,9 +157,9 @@ public class Router {
     vehiclePositionProvider = new VehiclePositionProvider(address);
 
     /* Set the specified ports */
-    vehicle_cam_port = Integer.parseInt(props.getProperty("portSendCam"));
-    vehicle_denm_port = Integer.parseInt(props.getProperty("portSendDenm"));
-    vehicle_iclcm_port = Integer.parseInt(props.getProperty("portSendIclcm"));
+    vehicleCamPort = Integer.parseInt(props.getProperty("portSendCam"));
+    vehicleDenmPort = Integer.parseInt(props.getProperty("portSendDenm"));
+    vehicleIclcmPort = Integer.parseInt(props.getProperty("portSendIclcm"));
 
     /* Open the receive socket */
     int portRcvFromVehicle = Integer.parseInt(props.getProperty("portRcvFromVehicle"));
@@ -313,13 +313,13 @@ public class Router {
                     + "\nListening on port "
                     + rcvSocket.getLocalPort()
                     + "\nVehicle Control System IP is "
-                    + vehicle_address
+                    + vehicleAddress
                     + "\nSending incoming CAM to port "
-                    + vehicle_cam_port
+                    + vehicleCamPort
                     + "\nSending incoming DENM to port "
-                    + vehicle_denm_port
+                    + vehicleDenmPort
                     + "\nSending incoming iCLCM to port "
-                    + vehicle_iclcm_port
+                    + vehicleIclcmPort
                     + "\nCopyright: Albin Severinson (albin@rendits.com)");
 
             /* Log statistics every second */
@@ -485,7 +485,7 @@ public class Router {
             SimpleCam simpleCam = new SimpleCam(cam);
             byte[] buffer = simpleCam.asByteArray();
             packet.setData(buffer, 0, buffer.length);
-            packet.setPort(vehicle_cam_port);
+            packet.setPort(vehicleCamPort);
 
             try {
               toVehicleSocket.send(packet);
@@ -509,7 +509,7 @@ public class Router {
             SimpleDenm simpleDenm = new SimpleDenm(denm);
             byte[] buffer = simpleDenm.asByteArray();
             packet.setData(buffer, 0, buffer.length);
-            packet.setPort(vehicle_denm_port);
+            packet.setPort(vehicleDenmPort);
 
             try {
               toVehicleSocket.send(packet);
@@ -534,7 +534,7 @@ public class Router {
             SimpleIclcm simpleIclcm = new SimpleIclcm(iclcm);
             byte[] buffer = simpleIclcm.asByteArray();
             packet.setData(buffer, 0, buffer.length);
-            packet.setPort(vehicle_iclcm_port);
+            packet.setPort(vehicleIclcmPort);
 
             try {
               toVehicleSocket.send(packet);
@@ -568,7 +568,7 @@ public class Router {
         @Override
         public void run() {
           logger.info("Send thread starting...");
-          packet.setAddress(vehicle_address);
+          packet.setAddress(vehicleAddress);
           try {
             while (running) {
               BtpPacket btpPacket = btpSocket.receive();
