@@ -78,19 +78,25 @@ public class Router {
   /* Incoming/outgoing BTP messages */
   private final BtpSocket btpSocket;
 
-  /* BTP ports for CAM/DENM/iCLCM */
+  /* BTP ports for CAM/DENM/iCLCM/CUSTOM */
   private static final short PORT_CAM = 2001;
   private static final short PORT_DENM = 2002;
+  private static final short PORT_CUSTOM = 2003;
   private static final short PORT_ICLCM = 2010;
+
+  /* Custom message ID */
+  private static final byte CUSTOM_MESSAGE_ID = 9;
 
   /* Message lifetime */
   private static final double CAM_LIFETIME_SECONDS = 0.9;
   private static final double iCLCM_LIFETIME_SECONDS = 0.9;
+  private static final double CUSTOM_LIFETIME_SECONDS = 0.9;
 
   /* Default ports */
   private int vehicleCamPort = 5000;
   private int vehicleDenmPort = 5000;
   private int vehicleIclcmPort = 5000;
+  private int vehicleCustomPort = 5000;
   private InetAddress vehicleAddress;
 
   /* Thread pool for all workers handling incoming/outgoing messages */
@@ -143,6 +149,7 @@ public class Router {
     vehicleCamPort = Integer.parseInt(props.getProperty("portSendCam"));
     vehicleDenmPort = Integer.parseInt(props.getProperty("portSendDenm"));
     vehicleIclcmPort = Integer.parseInt(props.getProperty("portSendIclcm"));
+    vehicleCustomPort = Integer.parseInt(props.getProperty("portSendCustom"));
 
     /* Open the receive socket */
     int portRcvFromVehicle = Integer.parseInt(props.getProperty("portRcvFromVehicle"));
@@ -154,7 +161,7 @@ public class Router {
     int localPortForUdpLinkLayer = Integer.parseInt(props.getProperty("localPortForUdpLinkLayer"));
     InetSocketAddress remoteAddressForUdpLinkLayer =
         new SocketAddressFromString(props.getProperty("remoteAddressForUdpLinkLayer"))
-        .asInetSocketAddress();
+            .asInetSocketAddress();
     LinkLayer linkLayer =
         new LinkLayerUdpToEthernet(localPortForUdpLinkLayer, remoteAddressForUdpLinkLayer, true);
 
@@ -304,17 +311,19 @@ public class Router {
             /* Print startup message */
             System.out.println(
                 "#### Rendits Vehicle Router ####"
-                + "\nListening on port "
-                + rcvSocket.getLocalPort()
-                + "\nVehicle Control System IP is "
-                + vehicleAddress
-                + "\nSending incoming CAM to port "
-                + vehicleCamPort
-                + "\nSending incoming DENM to port "
-                + vehicleDenmPort
-                + "\nSending incoming iCLCM to port "
-                + vehicleIclcmPort
-                + "\nCopyright: Albin Severinson (albin@rendits.com)");
+                    + "\nListening on port "
+                    + rcvSocket.getLocalPort()
+                    + "\nVehicle Control System IP is "
+                    + vehicleAddress
+                    + "\nSending incoming CAM to port "
+                    + vehicleCamPort
+                    + "\nSending incoming DENM to port "
+                    + vehicleDenmPort
+                    + "\nSending incoming iCLCM to port "
+                    + vehicleIclcmPort
+                    + "\nSending incoming custom messages to port "
+                    + vehicleCustomPort
+                    + "\nCopyright: Albin Severinson (albin@rendits.com)");
 
             /* Log statistics every second */
             while (running) {
@@ -327,9 +336,9 @@ public class Router {
               /* Log stats */
               logger.info(
                   "#CAM (Tx/Rx): {}/{} "
-                  + "| #DENM (Tx/Rx): {}/{} "
-                  + "| #iCLCM (Tx/Rx): {}/{} "
-                  + "| #Custom (Tx/Rx): {}/{}",
+                      + "| #DENM (Tx/Rx): {}/{} "
+                      + "| #iCLCM (Tx/Rx): {}/{} "
+                      + "| #Custom (Tx/Rx): {}/{}",
                   txCam,
                   rxCam,
                   txDenm,
@@ -350,8 +359,6 @@ public class Router {
    * @param buffer byte[] representation of a simple message.
    */
   private void properFromSimple(byte[] buffer) {
-    /* TODO: Add custom messages. */
-
     switch (buffer[0]) {
       case MessageId.cam:
         try {
@@ -376,9 +383,8 @@ public class Router {
           double headingDegreesFromNorth = (double) simpleCam.heading;
           headingDegreesFromNorth *= 10;
 
-          vehiclePositionProvider.update(latitude, longitude,
-                                         speedMetersPerSecond,
-                                         headingDegreesFromNorth);
+          vehiclePositionProvider.update(
+              latitude, longitude, speedMetersPerSecond, headingDegreesFromNorth);
         } catch (IllegalArgumentException e) {
           logger.error("Irrecoverable error when creating CAM. Ignoring message.", e);
         }
@@ -412,6 +418,11 @@ public class Router {
         }
         break;
 
+      case CUSTOM_MESSAGE_ID:
+        statsLogger.incTxCustom();
+        send(buffer);
+        break;
+
       default:
         logger.warn("Received incorrectly formatted message. First byte: {}", buffer[0]);
     }
@@ -439,7 +450,8 @@ public class Router {
                       packet.getOffset() + packet.getLength());
 
               if (receivedData.length != packet.getLength()) {
-                logger.warn("The length of the received data did not match the packet length. Dropping packet.");
+                logger.warn(
+                    "The length of the received data did not match the packet length. Dropping packet.");
                 continue;
               }
 
@@ -491,9 +503,9 @@ public class Router {
             logger.warn("Failed to send CAM to vehicle", e);
           }
         } catch (NullPointerException
-                 | IllegalArgumentException
-                 | UnsupportedOperationException
-                 | BufferOverflowException e) {
+            | IllegalArgumentException
+            | UnsupportedOperationException
+            | BufferOverflowException e) {
           logger.warn("Couldn't decode CAM:", e);
         }
         break;
@@ -513,9 +525,9 @@ public class Router {
             logger.warn("Failed to send DENM to vehicle", e);
           }
         } catch (NullPointerException
-                 | IllegalArgumentException
-                 | UnsupportedOperationException
-                 | BufferOverflowException e) {
+            | IllegalArgumentException
+            | UnsupportedOperationException
+            | BufferOverflowException e) {
           logger.warn("Couldn't decode DENM:", e);
         }
         break;
@@ -536,10 +548,22 @@ public class Router {
             logger.warn("Failed to send iCLCM to vehicle", e);
           }
         } catch (NullPointerException
-                 | IllegalArgumentException
-                 | UnsupportedOperationException
-                 | BufferOverflowException e) {
+            | IllegalArgumentException
+            | UnsupportedOperationException
+            | BufferOverflowException e) {
           logger.warn("Couldn't decode iCLCM:", e);
+        }
+        break;
+
+      case PORT_CUSTOM:
+        packet.setData(payload, 0, payload.length);
+        packet.setPort(vehicleCustomPort);
+
+        try {
+          toVehicleSocket.send(packet);
+          statsLogger.incRxCustom();
+        } catch (IOException e) {
+          logger.warn("Failed to send custom message to vehicle", e);
         }
         break;
 
@@ -640,6 +664,20 @@ public class Router {
   }
 
   /**
+   * Broadcast a custom message.
+   *
+   * @param bytes The byte array to send.
+   */
+  private void send(byte[] buffer) {
+    BtpPacket packet = BtpPacket.singleHop(buffer, PORT_CUSTOM, CUSTOM_LIFETIME_SECONDS);
+    try {
+      btpSocket.send(packet);
+    } catch (IOException e) {
+      logger.warn("Failed to send custom message", e);
+    }
+  }
+
+  /**
    * This class is used to provide the current position of the vehicle. The position is used by the
    * beaconing service, to generate GeoBroadcast addresses and to check if a received DENM message
    * is addressed to us.
@@ -672,9 +710,11 @@ public class Router {
      * @param speedMetersPerSecond Vehicle speed in m/s.
      * @param headingDegreesFromNorth Heading in degrees from north.
      */
-    public void update(double latitude, double longitude,
-                       double speedMetersPerSecond,
-                       double headingDegreesFromNorth) {
+    public void update(
+        double latitude,
+        double longitude,
+        double speedMetersPerSecond,
+        double headingDegreesFromNorth) {
       this.position = new Position(latitude, longitude);
       this.speedMetersPerSecond = speedMetersPerSecond;
       this.headingDegreesFromNorth = headingDegreesFromNorth;

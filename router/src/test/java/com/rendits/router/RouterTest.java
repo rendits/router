@@ -12,11 +12,13 @@ import java.net.DatagramPacket;
 import java.net.SocketTimeoutException;
 import java.util.Properties;
 import java.util.Arrays;
+import java.util.Random;
 import java.io.IOException;
 import net.gcdc.UdpDuplicator;
 
 public class RouterTest {
-        private final int MAX_UDP_LENGTH = 256;
+        private static final int MAX_UDP_LENGTH = 600;
+        private static final byte CUSTOM_MESSAGE_ID = 9;
 
         private void sendMessages(DatagramSocket socket, InetAddress routerAddress,
                                   int portRcvFromVehicle) throws IOException {
@@ -27,6 +29,7 @@ public class RouterTest {
                 SimpleCam simpleCam = SampleMessages.getSampleCam();
                 SimpleDenm simpleDenm = SampleMessages.getSampleDenm();
                 SimpleIclcm simpleIclcm = SampleMessages.getSampleIclcm();
+                Random random = new Random();
                 for (int i = 0; i < messagesToSend; i++) {
                         buffer = simpleCam.asByteArray();
                         packet = new DatagramPacket(buffer, buffer.length);
@@ -57,6 +60,17 @@ public class RouterTest {
                         socket.receive(rcvPacket);
                         assertArrayEquals(buffer, rcvPacket.getData());
                         assertEquals(simpleIclcm, new SimpleIclcm(rcvPacket.getData()));
+
+                        buffer = new byte[MAX_UDP_LENGTH];
+                        random.nextBytes(buffer);
+                        buffer[0] = CUSTOM_MESSAGE_ID;
+                        packet = new DatagramPacket(buffer, buffer.length);
+                        rcvPacket = new DatagramPacket(new byte[buffer.length], buffer.length);
+                        packet.setPort(portRcvFromVehicle);
+                        packet.setAddress(routerAddress);
+                        socket.send(packet);
+                        socket.receive(rcvPacket);
+                        assertArrayEquals(buffer, rcvPacket.getData());
                 }
                 return;
         }
@@ -76,6 +90,7 @@ public class RouterTest {
                 props.setProperty("portSendCam", "" + portSendIts);
                 props.setProperty("portSendDenm", "" + portSendIts);
                 props.setProperty("portSendIclcm", "" + portSendIts);
+                props.setProperty("portSendCustom", "" + portSendIts);
                 props.setProperty("receiveThreads", "1");
                 props.setProperty("sendThreads", "3");
                 props.setProperty("vehicleAddress", vehicleAddress);
@@ -96,7 +111,7 @@ public class RouterTest {
 
                 /* Setup sockets */
                 DatagramSocket socket = new DatagramSocket(portSendIts);
-                socket.setSoTimeout(1000);
+                socket.setSoTimeout(10000);
                 InetAddress routerAddress = InetAddress.getByName("127.0.0.1");
 
                 /* Send some messages and make sure we get the same
