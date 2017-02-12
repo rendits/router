@@ -430,8 +430,10 @@ public class Router {
                       packet.getOffset(),
                       packet.getOffset() + packet.getLength());
 
-              // TODO: Replace with checks
-              assert receivedData.length == packet.getLength();
+              if (receivedData.length != packet.getLength()) {
+                logger.warn("The length of the received data did not match the packet length. Dropping packet.");
+                continue;
+              }
 
               /* Parse data and send forward message */
               properFromSimple(receivedData);
