@@ -370,7 +370,15 @@ public class Router {
           double longitude = (double) simpleCam.getLongitude();
           longitude /= 1e7;
 
-          vehiclePositionProvider.update(latitude, longitude);
+          double speedMetersPerSecond = (double) simpleCam.speed;
+          speedMetersPerSecond *= 100;
+
+          double headingDegreesFromNorth = (double) simpleCam.heading;
+          headingDegreesFromNorth *= 10;
+
+          vehiclePositionProvider.update(latitude, longitude,
+                                         speedMetersPerSecond,
+                                         headingDegreesFromNorth);
         } catch (IllegalArgumentException e) {
           logger.error("Irrecoverable error when creating CAM. Ignoring message.", e);
         }
@@ -637,11 +645,11 @@ public class Router {
    * is addressed to us.
    */
   public static class VehiclePositionProvider implements PositionProvider {
-    public Address address;
-    public Position position;
-    public boolean isPositionConfident;
-    public double speedMetersPerSecond;
-    public double headingDegreesFromNorth;
+    private final Address address;
+    private Position position;
+    private double speedMetersPerSecond;
+    private double headingDegreesFromNorth;
+    private Instant lastUpdateTimestamp;
 
     /**
      * VehiclePositionProvider constructor.
@@ -651,9 +659,9 @@ public class Router {
     VehiclePositionProvider(Address address) {
       this.address = address;
       this.position = new Position(0, 0);
-      this.isPositionConfident = false;
       this.speedMetersPerSecond = 0;
       this.headingDegreesFromNorth = 0;
+      this.lastUpdateTimestamp = Instant.EPOCH;
     }
 
     /**
@@ -661,10 +669,16 @@ public class Router {
      *
      * @param latitude The current latitude of the vehicle.
      * @param longitude The current longitude of the vehicle.
+     * @param speedMetersPerSecond Vehicle speed in m/s.
+     * @param headingDegreesFromNorth Heading in degrees from north.
      */
-    public void update(double latitude, double longitude) {
-      /* TODO: Set speed, heading and confidence as well. */
+    public void update(double latitude, double longitude,
+                       double speedMetersPerSecond,
+                       double headingDegreesFromNorth) {
       this.position = new Position(latitude, longitude);
+      this.speedMetersPerSecond = speedMetersPerSecond;
+      this.headingDegreesFromNorth = headingDegreesFromNorth;
+      this.lastUpdateTimestamp = Instant.now();
     }
 
     /**
@@ -683,9 +697,15 @@ public class Router {
      */
     @Override
     public LongPositionVector getLatestPosition() {
+
+      /* The position is considered confident for 200 ms after a
+       * position update. */
+      Instant timestamp = Instant.now();
+      boolean isPositionConfident = timestamp.minusMillis(200).isBefore(lastUpdateTimestamp);
+
       return new LongPositionVector(
           address,
-          Instant.now(),
+          timestamp,
           position,
           isPositionConfident,
           speedMetersPerSecond,
