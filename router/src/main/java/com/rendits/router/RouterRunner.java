@@ -26,9 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is used for running the router and listening to configuration changes over the
- * network. Whenever a new set of properties is received, the router is restarted with the new
- * properties.
+ * This class is used for running the router and listening to configuration
+ * changes over the network. Whenever a new set of properties is received, the
+ * router is restarted with the new properties.
  */
 public class RouterRunner implements Runnable {
   private static final Logger logger = LoggerFactory.getLogger(RouterRunner.class);
@@ -39,7 +39,8 @@ public class RouterRunner implements Runnable {
    * RouterRunner constructor.
    *
    * @param props Default properties.
-   * @exception IOException Thrown on problem setting up sockets or on missing required parameters.
+   * @exception IOException Thrown on problem setting up sockets or on missing
+   * required parameters.
    */
   RouterRunner(Properties props) throws IOException {
     this.props = props;
@@ -52,8 +53,8 @@ public class RouterRunner implements Runnable {
   }
 
   /**
-   * Start the router abd wait for a config change to arrive. When one does the router is restarted
-   * with the new properties.
+   * Start the router and wait for a config change to arrive. When one does the
+   * router is restarted with the new properties.
    */
   @Override
   public void run() {
