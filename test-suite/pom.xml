@@ -133,7 +133,7 @@
 	            <goal>copy-dependencies</goal>
 	          </goals>
 	          <configuration>
-	            <!-- exclude junit, we need runtime dependency only -->
+	            <!-- exclude junit, we need runtime dependencies only -->
 	            <includeScope>runtime</includeScope>
 	            <outputDirectory>${project.build.directory}/dependency-jars/</outputDirectory>
 	          </configuration>
