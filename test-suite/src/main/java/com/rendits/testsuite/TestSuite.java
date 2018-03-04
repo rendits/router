@@ -116,15 +116,12 @@ public class TestSuite {
         /* Receive a packet from the router */
         public DatagramPacket receive() {
             DatagramPacket packet = new DatagramPacket(new byte[MAX_UDP_SIZE], MAX_UDP_SIZE);
-
-            /* TODO: This is probably not a good idea. */
             try{
                 rcvSocket.receive(packet);
             }catch(IOException e){
                 logger.warn("IOException when receiving packet.");
                 return null;
             }
-
             return packet;
         }
     }
@@ -277,22 +274,11 @@ public class TestSuite {
             };
     }
 
-    /* Chill out for a bit */
-    /* TODO: Remove */
-    private void sleep(int t) {
-        try{
-            Thread.sleep(t);
-        } catch(InterruptedException e) {
-            logger.warn("Interrupted during sleep.");
-        }
-    }
-
     public static void main(String[] args) throws IOException {
         Properties props = new Properties();
         FileInputStream in = new FileInputStream("testsuite.properties");
         props.load(in);
         in.close();
-
         TestSuite ts = new TestSuite(props);
     }
 }
