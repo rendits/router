@@ -181,13 +181,21 @@ public class Router {
 
     /* Start the loops that handle sending and receiving messages */
     int numReceiveThreads = Integer.parseInt(props.getProperty("receiveThreads", "1"));
-    assert numReceiveThreads == 1 : "Only a single receive thread is allowed for now.";
+    if (numReceiveThreads != 1) {
+        this.close();
+        throw new IllegalArgumentException("there must be exactly 1 receive thread."
+                                           + " check the properties file.");
+    }
     for (int i = 0; i < numReceiveThreads; i++) {
       executor.submit(receiveFromVehicle);
     }
 
     int numSendThreads = Integer.parseInt(props.getProperty("sendThreads", "1"));
-    assert numSendThreads > 0;
+    if (numSendThreads <= 0) {
+        this.close();
+        throw new IllegalArgumentException("there must be at least 1 send thread."
+                                           + " check the properties file.");
+    }
     for (int i = 0; i < numSendThreads; i++) {
       executor.submit(sendToVehicle);
     }
