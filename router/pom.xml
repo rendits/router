@@ -117,13 +117,6 @@
       <version>1.2</version>
     </dependency>
 
-    <!-- Java serialization/deserialization library that can convert
-         Java Objects into JSON and back -->
-    <dependency>  <!-- Apache -->
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.3.1</version>
-    </dependency>
   </dependencies>
 
   <build>
