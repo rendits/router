@@ -110,7 +110,7 @@
     </dependency>
 
     <!-- JSR310 time backport -->
-    <!-- TODO: Is this functionality present by default in Java 8? -->
+    <!-- TODO: Functionality included in Java 8. Included for legacy reasons. -->
     <dependency>  <!-- BSD 3-clause -->
       <groupId>org.threeten</groupId>
       <artifactId>threetenbp</artifactId>
