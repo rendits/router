@@ -7,7 +7,7 @@
   <name>testsuite</name>
   <url>http://rendits.com</url>
 
-  <!-- Compile with and for Java 8 -->
+  <!-- Compile for and with Java 8 -->
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
