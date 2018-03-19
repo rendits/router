@@ -146,7 +146,7 @@ public class TestSuite {
         private ConcurrentHashMap highResTimestamps;
 
         private boolean running = true;
-        private final int WARMUP_COUNT = 100;
+        private final int WARMUP_COUNT = 10000;
         private final int TEST_LENGTH = 1000;
 
         LatencyTest(ReceiveService receiveService,
