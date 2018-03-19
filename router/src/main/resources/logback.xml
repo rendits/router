@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logFile.log</file>
+    <file>/var/log/rendits/router.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <!-- daily rollover -->
       <fileNamePattern>logFile.%d{yyyy-MM-dd}.log</fileNamePattern>
@@ -25,6 +25,6 @@
   </appender>
 
   <root level="info">
-    <appender-ref ref="FILE" />
+    <appender-ref ref="STDOUT" />
   </root>
 </configuration>
