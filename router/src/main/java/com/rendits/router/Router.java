@@ -405,7 +405,8 @@ public class Router {
 
           /* Simple messages are sent to everyone within range. */
           Position position = vehiclePositionProvider.getPosition();
-          Area target = Area.circle(position, Double.MAX_VALUE);
+          int max_radius = 65535;
+          Area target = Area.circle(position, max_radius);
           send(denm, Geobroadcast.geobroadcast(target));
           statsLogger.incTxDenm();
 
