@@ -161,11 +161,20 @@ public class TestSuite {
         /* Start the latency test */
         public void start() {
 
-            /* Let the JIT warm up */
-            logger.info("Starting latency test warm-up.");
+            /* Check for any connection */
             DatagramPacket packet;
+            packet = receiveService.receive();
+            logger.info("Successfully connected to the routing application.");
+
+            /* Let the JIT warm up */
+            int totalReceived = 0;
+            logger.info("Warming up the JIT...");
             for(int i = 0; i < WARMUP_COUNT;i++) {
                 packet = receiveService.receive();
+                totalReceived++;
+                if(totalReceived % 100 == 0) {
+                    logger.info((int) (totalReceived / (double) WARMUP_COUNT * 100) + "% completed...");
+                }
             }
 
             /* Start the test proper */
@@ -187,7 +196,7 @@ public class TestSuite {
                         switch(packet.getData()[0]) {
                         case 2:
                             if(totalReceived % 100 == 0) {
-                                logger.info(totalReceived / (double) TEST_LENGTH * 100 + "% completed...");
+                                logger.info((int) (totalReceived / (double) TEST_LENGTH * 100) + "% completed...");
                             }
 
                             SimpleCam simpleCam  = new SimpleCam(packet.getData());
@@ -206,7 +215,7 @@ public class TestSuite {
                     long averageDelay = totalDelay / totalReceived;
                     double averageDelayMilliSeconds = (double) averageDelay / 1e6;
                     logger.info("Delay test completed. Received: " + TEST_LENGTH +
-                                " messages. Average delay: " + averageDelayMilliSeconds + "ms.");
+                                " messages. Average round-trip delay: " + averageDelayMilliSeconds + "ms.");
                 }
             };
     }
