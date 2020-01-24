@@ -85,7 +85,7 @@ public class Router {
   private static final short PORT_ICLCM = 2010;
 
   /* Custom message ID */
-  private static final byte CUSTOM_MESSAGE_ID = 9;
+  private static final byte CUSTOM_MESSAGE_ID = 10;
 
   /* Message lifetime */
   private static final double CAM_LIFETIME_SECONDS = 0.9;
