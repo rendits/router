@@ -85,7 +85,7 @@ public class Router {
   private static final short PORT_ICLCM = 2010;
 
   /* Custom message ID */
-  private static final byte CUSTOM_MESSAGE_ID = 10;
+  private static final byte CUSTOM_MESSAGE_ID = 20;
 
   /* Message lifetime */
   private static final double CAM_LIFETIME_SECONDS = 0.9;
@@ -97,6 +97,7 @@ public class Router {
   private int vehicleDenmPort = 5000;
   private int vehicleIclcmPort = 5000;
   private int vehicleCustomPort = 5000;
+  private int numCustomPorts = 10;
   private InetAddress vehicleAddress;
 
   /* Thread pool for all workers handling incoming/outgoing messages */
@@ -367,73 +368,65 @@ public class Router {
    * @param buffer byte[] representation of a simple message.
    */
   private void properFromSimple(byte[] buffer) {
-    switch (buffer[0]) {
-      case MessageId.cam:
-        try {
-          SimpleCam simpleCam = new SimpleCam(buffer);
-          Cam cam = simpleCam.asCam();
-          send(cam);
-          statsLogger.incTxCam();
+    if (buffer.length == 0) {
+      return;
+    }
+    byte messageId = buffer[0];
+    if (messageId == MessageId.cam) {
+      try {
+        SimpleCam simpleCam = new SimpleCam(buffer);
+        Cam cam = simpleCam.asCam();
+        send(cam);
+        statsLogger.incTxCam();
 
-          /* Use the data in the CAM to update the locally
-           * stored vehicle position. Used when receiving
-           * messages and generating adresses.
-           */
-          double latitude = (double) simpleCam.getLatitude();
-          latitude /= 1e7;
+        /* Use the data in the CAM to update the locally
+         * stored vehicle position. Used when receiving
+         * messages and generating adresses.
+         */
+        double latitude = (double) simpleCam.getLatitude();
+        latitude /= 1e7;
 
-          double longitude = (double) simpleCam.getLongitude();
-          longitude /= 1e7;
+        double longitude = (double) simpleCam.getLongitude();
+        longitude /= 1e7;
 
-          double speedMetersPerSecond = (double) simpleCam.speed;
-          speedMetersPerSecond *= 100;
+        double speedMetersPerSecond = (double) simpleCam.speed;
+        speedMetersPerSecond *= 100;
 
-          double headingDegreesFromNorth = (double) simpleCam.heading;
-          headingDegreesFromNorth *= 10;
+        double headingDegreesFromNorth = (double) simpleCam.heading;
+        headingDegreesFromNorth *= 10;
 
-          vehiclePositionProvider.update(
-              latitude, longitude, speedMetersPerSecond, headingDegreesFromNorth);
-        } catch (IllegalArgumentException e) {
-          logger.error("Irrecoverable error when creating CAM. Ignoring message.", e);
-        }
-        break;
+        vehiclePositionProvider.update(latitude, longitude, speedMetersPerSecond, headingDegreesFromNorth);
+      } catch (IllegalArgumentException e) {
+        logger.error("Irrecoverable error when creating CAM. Ignoring message.", e);
+      }
+    } else if (messageId == MessageId.denm) {
+      try {
+        SimpleDenm simpleDenm = new SimpleDenm(buffer);
+        Denm denm = simpleDenm.asDenm();
 
-      case MessageId.denm:
-        try {
-          SimpleDenm simpleDenm = new SimpleDenm(buffer);
-          Denm denm = simpleDenm.asDenm();
+        /* Simple messages are sent to everyone within range. */
+        Position position = vehiclePositionProvider.getPosition();
+        int max_radius = 65535;
+        Area target = Area.circle(position, max_radius);
+        send(denm, Geobroadcast.geobroadcast(target));
+        statsLogger.incTxDenm();
 
-          /* Simple messages are sent to everyone within range. */
-          Position position = vehiclePositionProvider.getPosition();
-          int max_radius = 65535;
-          Area target = Area.circle(position, max_radius);
-          send(denm, Geobroadcast.geobroadcast(target));
-          statsLogger.incTxDenm();
+      } catch (IllegalArgumentException e) {
+        logger.error("Irrecoverable error when creating DENM. Ignoring message.", e);
+      }
+    } else if (messageId == Iclcm.MessageID_iCLCM) {
+      try {
+        SimpleIclcm simpleIclcm = new SimpleIclcm(buffer);
+        IgameCooperativeLaneChangeMessage iclcm = simpleIclcm.asIclcm();
+        send(iclcm);
+        statsLogger.incTxIclcm();
 
-        } catch (IllegalArgumentException e) {
-          logger.error("Irrecoverable error when creating DENM. Ignoring message.", e);
-        }
-        break;
-
-      case Iclcm.MessageID_iCLCM:
-        try {
-          SimpleIclcm simpleIclcm = new SimpleIclcm(buffer);
-          IgameCooperativeLaneChangeMessage iclcm = simpleIclcm.asIclcm();
-          send(iclcm);
-          statsLogger.incTxIclcm();
-
-        } catch (IllegalArgumentException e) {
-          logger.error("Irrecoverable error when creating iCLCM. Ignoring message.", e);
-        }
-        break;
-
-      case CUSTOM_MESSAGE_ID:
-        statsLogger.incTxCustom();
-        send(buffer);
-        break;
-
-      default:
-        logger.warn("Received incorrectly formatted message. First byte: {}", buffer[0]);
+      } catch (IllegalArgumentException e) {
+        logger.error("Irrecoverable error when creating iCLCM. Ignoring message.", e);
+      }
+    } else { // all other IDs are assumed to be for custom messages
+      statsLogger.incTxCustom();
+      send(buffer);
     }
   }
 
@@ -495,7 +488,13 @@ public class Router {
    * @param toVehicleSocket The socket to use when sending the simple message,
    */
   private void simpleFromProper(
-      byte[] payload, int destinationPort, DatagramPacket packet, DatagramSocket toVehicleSocket) {
+      byte[] payload,
+      int destinationPort,
+      DatagramPacket packet,
+      DatagramSocket toVehicleSocket) {
+    if (payload.length == 0) {
+      return;
+    }
     switch (destinationPort) {
       case PORT_CAM:
         try {
@@ -565,8 +564,13 @@ public class Router {
         break;
 
       case PORT_CUSTOM:
+        byte messageId = payload[0];
+        int port = (int) messageId - CUSTOM_MESSAGE_ID + vehicleCustomPort;
+        if (port < vehicleCustomPort || port > vehicleCustomPort + numCustomPorts) {
+          logger.warn(String.format("Dropping message with ID %d since it's outside the port range", messageId));
+        }
         packet.setData(payload, 0, payload.length);
-        packet.setPort(vehicleCustomPort);
+        packet.setPort(port);
 
         try {
           toVehicleSocket.send(packet);
